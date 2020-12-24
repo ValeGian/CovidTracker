@@ -4,11 +4,9 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Area/Area.iml" filepath="$PROJECT_DIR$/Area/Area.iml" />
       <module fileurl="file://$PROJECT_DIR$/CovidTracker.iml" filepath="$PROJECT_DIR$/CovidTracker.iml" />
-      <module fileurl="file://$PROJECT_DIR$/Interfaces/Interfaces.iml" filepath="$PROJECT_DIR$/Interfaces/Interfaces.iml" />
       <module fileurl="file://$PROJECT_DIR$/Nation/Nation.iml" filepath="$PROJECT_DIR$/Nation/Nation.iml" />
       <module fileurl="file://$PROJECT_DIR$/Region/Region.iml" filepath="$PROJECT_DIR$/Region/Region.iml" />
-      <module fileurl="file://$PROJECT_DIR$/areaBeans/areaBeans.iml" filepath="$PROJECT_DIR$/areaBeans/areaBeans.iml" />
-      <module fileurl="file://$PROJECT_DIR$/regionBeans/regionBeans.iml" filepath="$PROJECT_DIR$/regionBeans/regionBeans.iml" />
+      <module fileurl="file://$PROJECT_DIR$/RegionWeb/RegionWeb.iml" filepath="$PROJECT_DIR$/RegionWeb/RegionWeb.iml" />
     </modules>
   </component>
 </project>

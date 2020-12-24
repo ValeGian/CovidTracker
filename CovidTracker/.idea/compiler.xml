@@ -7,11 +7,9 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="Nation" />
-        <module name="regionBeans" />
-        <module name="Interfaces" />
+        <module name="RegionWeb" />
         <module name="Region" />
         <module name="Area" />
-        <module name="areaBeans" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -21,6 +19,7 @@
       <module name="Nation" target="1.8" />
       <module name="Region" target="1.8" />
       <module name="regionBeans" target="1.8" />
+      <module name="RegionWeb" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

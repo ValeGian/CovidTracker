@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="Region:war">
+    <output-path>$PROJECT_DIR$/Region/target</output-path>
+    <properties id="maven-jee-properties">
+      <options>
+        <module>Region</module>
+        <packaging>war</packaging>
+      </options>
+    </properties>
+    <root id="archive" name="Region-1.0-SNAPSHOT.war">
+      <element id="artifact" artifact-name="Region:war exploded" />
+    </root>
+  </artifact>
+</component>
