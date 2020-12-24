@@ -8,6 +8,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="Nation" />
         <module name="regionBeans" />
+        <module name="Interfaces" />
         <module name="Region" />
         <module name="Area" />
         <module name="areaBeans" />
@@ -16,6 +17,7 @@
     <bytecodeTargetLevel>
       <module name="Area" target="1.8" />
       <module name="areaBeans" target="1.8" />
+      <module name="Interfaces" target="1.8" />
       <module name="Nation" target="1.8" />
       <module name="Region" target="1.8" />
       <module name="regionBeans" target="1.8" />
