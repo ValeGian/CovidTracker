@@ -2,7 +2,7 @@
 /shelf/
 /workspace.xml
 # Datasource local storage ignored files
-/../../../../../:\LSMDB_git_project\LSMDB_UniMusic\Covid-Tracker\.idea/dataSources/
+/../../../../../:\LSMDB_git_project\LSMDB_UniMusic\CovidTracker\.idea/dataSources/
 /dataSources.local.xml
 # Zeppelin ignored files
 /ZeppelinRemoteNotebooks/
