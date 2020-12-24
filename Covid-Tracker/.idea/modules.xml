@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Area/Area.iml" filepath="$PROJECT_DIR$/Area/Area.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Covid-Tracker.iml" filepath="$PROJECT_DIR$/Covid-Tracker.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Nation/Nation.iml" filepath="$PROJECT_DIR$/Nation/Nation.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Region/Region.iml" filepath="$PROJECT_DIR$/Region/Region.iml" />
+    </modules>
+  </component>
+</project>
