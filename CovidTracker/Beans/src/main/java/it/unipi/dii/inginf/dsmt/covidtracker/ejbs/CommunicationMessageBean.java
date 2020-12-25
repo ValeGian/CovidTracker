@@ -7,7 +7,7 @@ import javax.ejb.Stateless;
 import java.io.Serializable;
 
 @Stateless(name = "CommunicationMessageEJB")
-public class CommunicationMessageBean implements CommunicationMessage, Serializable {
+public class CommunicationMessageBean implements CommunicationMessage {
 
     MessageType messageType = MessageType.NO_ACTION_REQUEST;
     String messageBody = null;
