@@ -1,9 +1,10 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.intfs;
 
 import javax.ejb.Remote;
+import java.io.Serializable;
 
 @Remote
-public interface CommunicationMessage {
+public interface CommunicationMessage extends Serializable {
 
     MessageType getMessageType();
 

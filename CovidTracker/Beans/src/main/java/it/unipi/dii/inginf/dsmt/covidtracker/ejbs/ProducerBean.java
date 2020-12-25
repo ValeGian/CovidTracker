@@ -47,8 +47,7 @@ public class ProducerBean implements Producer {
 
         try {
             ObjectMessage myMsg = myJMSContext.createObjectMessage();
-            CommunicationMessageBean cMsgBean = (CommunicationMessageBean) cMsg;
-            myMsg.setObject(cMsgBean);
+            myMsg.setObject(cMsg);
             Queue myQueue = consumers.get(consumerName);
             myJMSContext.createProducer().send(myQueue,myMsg);
         } catch (JMSException|ClassCastException e) {
