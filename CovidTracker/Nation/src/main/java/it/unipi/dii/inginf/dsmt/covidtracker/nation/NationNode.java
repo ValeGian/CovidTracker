@@ -1,13 +1,17 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.nation;
 
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
 
 import javax.ejb.EJB;
 
-public class Main {
-
+public class NationNode {
     @EJB
     static Producer myProducer;
+
+    @EJB
+    static CommunicationMessage myCommunicationMessage;
 
     public static void main(String[] args) {
         /* Esempio per Region e Area, in Nazione non ha senso dato che ce n'è solo una
@@ -22,9 +26,9 @@ public class Main {
             // da il metodo onMessage del proprio ConsumerBean hostato sullo stesso nodo
             // (prendere come riferimento NationConsumerBean nel modulo Nation)
             String nationName = getNationName(myName); //metodo di utility per ottenere informazioni dal file hostato
-            myProducer.enqueue(nationName, MessaggioDiConnessione);
+            myCommunicationMessage.setMessage(MessageType.CONNECTION_REQUEST);
+            myProducer.enqueue(nationName, myCommunicationMessage);
         }
          */
-
     }
 }

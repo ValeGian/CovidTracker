@@ -1,7 +1,9 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
 
+import javax.ejb.EJB;
 import javax.ejb.Stateful;
 import javax.jms.*;
 import javax.naming.Context;
@@ -32,7 +34,7 @@ public class ProducerBean implements Producer {
     }
 
     @Override
-    public void enqueue(final String consumerName, final String text) {
+    public void enqueue(final String consumerName, final CommunicationMessage cMsg) {
         if(consumers.get(consumerName) == null) {
             try {
                 Queue newQueue= (Queue)ic.lookup(consumerName);
@@ -43,8 +45,14 @@ public class ProducerBean implements Producer {
             }
         }
 
-        TextMessage myMsg = myJMSContext.createTextMessage(text);
-        Queue myQueue = consumers.get(consumerName);
-        myJMSContext.createProducer().send(myQueue,myMsg);
+        try {
+            ObjectMessage myMsg = myJMSContext.createObjectMessage();
+            CommunicationMessageBean cMsgBean = (CommunicationMessageBean) cMsg;
+            myMsg.setObject(cMsgBean);
+            Queue myQueue = consumers.get(consumerName);
+            myJMSContext.createProducer().send(myQueue,myMsg);
+        } catch (JMSException|ClassCastException e) {
+            e.printStackTrace();
+        }
     }
 }
