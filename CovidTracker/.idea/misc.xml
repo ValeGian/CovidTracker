@@ -11,6 +11,8 @@
         <option value="$PROJECT_DIR$/Nation/pom.xml" />
         <option value="$PROJECT_DIR$/Region/pom.xml" />
         <option value="$PROJECT_DIR$/RegionWeb/pom.xml" />
+        <option value="$PROJECT_DIR$/Beans/pom.xml" />
+        <option value="$PROJECT_DIR$/Interfaces/pom.xml" />
       </list>
     </option>
   </component>

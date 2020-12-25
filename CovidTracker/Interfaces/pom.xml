@@ -4,10 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>it.unipi.dii.inginf.dsmt.covidtracker.nation</groupId>
-    <artifactId>Nation</artifactId>
+    <groupId>it.unipi.dii.inginf.dsmt.covidtracker.intfs</groupId>
+    <artifactId>Interfaces</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>Nation</name>
+    <name>Interfaces</name>
 
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -29,12 +29,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>javax.jms</groupId>
-            <artifactId>javax.jms-api</artifactId>
-            <version>2.0.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>${junit.version}</version>
@@ -45,12 +39,6 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>it.unipi.dii.inginf.dsmt.covidtracker.intfs</groupId>
-            <artifactId>Interfaces</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 
