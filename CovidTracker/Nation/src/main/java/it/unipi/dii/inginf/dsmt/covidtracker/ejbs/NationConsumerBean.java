@@ -33,6 +33,9 @@ public class NationConsumerBean implements MessageListener {
                     case AGGREGATION_REQUEST:
                         String messageBody = cMsg.getMessageBody();
                         break;
+                    case DAILY_REPORT:
+
+                        break;
                     default:
                         break;
                 }
