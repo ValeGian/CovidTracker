@@ -1,17 +1,9 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.MessageType;
 
-import javax.ejb.ActivationConfigProperty;
-import javax.ejb.MessageDriven;
 import javax.jms.*;
 
-@MessageDriven(name = "NationConsumerEJB",
-        activationConfig = {
-        @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "jms/nationQueue"),
-        @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Queue"),
-})
 public class NationConsumerBean implements MessageListener {
     public NationConsumerBean() {
     }
