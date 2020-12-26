@@ -2,14 +2,13 @@ package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.MessageType;
-
 import javax.ejb.Stateless;
-import java.io.Serializable;
 
 @Stateless(name = "CommunicationMessageEJB")
 public class CommunicationMessageBean implements CommunicationMessage {
 
     MessageType messageType = MessageType.NO_ACTION_REQUEST;
+    String senderName = null;
     String messageBody = null;
 
     public CommunicationMessageBean() {
@@ -22,18 +21,27 @@ public class CommunicationMessageBean implements CommunicationMessage {
     }
 
     @Override
+    public String getSenderName() {
+        return senderName;
+    }
+
+    @Override
     public String getMessageBody() {
         return messageBody;
     }
 
     @Override
-    public void setMessage(MessageType messageType) {
+    public void setMessageType(MessageType messageType) {
         this.messageType = messageType;
     }
 
     @Override
-    public void setMessage(MessageType messageType, String messageBody) {
-        this.messageType = messageType;
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
+    }
+
+    @Override
+    public void setMessageBody(String messageBody) {
         this.messageBody = messageBody;
     }
 }
