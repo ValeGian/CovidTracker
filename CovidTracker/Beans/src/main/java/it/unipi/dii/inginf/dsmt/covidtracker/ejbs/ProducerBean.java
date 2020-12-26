@@ -3,7 +3,6 @@ package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
 
-import javax.ejb.EJB;
 import javax.ejb.Stateful;
 import javax.jms.*;
 import javax.naming.Context;

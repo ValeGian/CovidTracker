@@ -8,10 +8,14 @@ public interface CommunicationMessage extends Serializable {
 
     MessageType getMessageType();
 
+    String getSenderName();
+
     String getMessageBody();
 
-    void setMessage(MessageType messageType);
+    void setMessageType(MessageType messageType);
 
-    void setMessage(MessageType messageType, String messageBody);
+    void setSenderName(String receiverName);
+
+    void setMessageBody(String messageBody);
 
 }

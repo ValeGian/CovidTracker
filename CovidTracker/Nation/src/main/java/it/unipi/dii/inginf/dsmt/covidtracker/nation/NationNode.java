@@ -1,7 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.nation;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
 
 import javax.ejb.EJB;
