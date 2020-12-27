@@ -1,4 +1,4 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.intfs;
+package it.unipi.dii.inginf.dsmt.covidtracker.enums;
 
 public enum MessageType {
     NO_ACTION_REQUEST,

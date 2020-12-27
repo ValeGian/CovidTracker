@@ -1,7 +1,8 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
+
 
 import javax.ejb.Stateful;
 import javax.jms.*;

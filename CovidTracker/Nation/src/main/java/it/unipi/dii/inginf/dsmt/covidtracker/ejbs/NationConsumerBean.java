@@ -1,7 +1,5 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
-
 import javax.jms.*;
 
 public class NationConsumerBean implements MessageListener {

@@ -1,46 +1,45 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
+package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.MessageType;
-import javax.ejb.Stateless;
+import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 
-@Stateless(name = "CommunicationMessageEJB")
-public class CommunicationMessageBean implements CommunicationMessage {
+import java.io.Serializable;
+
+public class CommunicationMessage implements Serializable {
 
     MessageType messageType = MessageType.NO_ACTION_REQUEST;
     String senderName = null;
     String messageBody = null;
 
-    public CommunicationMessageBean() {
+    public CommunicationMessage() {
 
     }
 
-    @Override
+    public CommunicationMessage(MessageType messageType, String senderName, String messageBody) {
+        this.messageType = messageType;
+        this.senderName = senderName;
+        this.messageBody = messageBody;
+    }
+
     public MessageType getMessageType() {
         return messageType;
     }
 
-    @Override
     public String getSenderName() {
         return senderName;
     }
 
-    @Override
     public String getMessageBody() {
         return messageBody;
     }
 
-    @Override
     public void setMessageType(MessageType messageType) {
         this.messageType = messageType;
     }
 
-    @Override
     public void setSenderName(String senderName) {
         this.senderName = senderName;
     }
 
-    @Override
     public void setMessageBody(String messageBody) {
         this.messageBody = messageBody;
     }
