@@ -1,7 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.nation;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.ejbs.NationConsumerBean;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
 
 import javax.ejb.EJB;
@@ -17,9 +16,6 @@ public class NationNode {
 
     @EJB
     static Producer myProducer;
-
-    @EJB
-    static CommunicationMessage myCommunicationMessage;
 
     public static void main(String[] args) {
         setMessageListener("jms/nationQueue");
