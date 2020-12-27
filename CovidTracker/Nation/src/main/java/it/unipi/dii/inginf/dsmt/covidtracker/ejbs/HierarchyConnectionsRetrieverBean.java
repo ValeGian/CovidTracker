@@ -22,7 +22,7 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
     }
 
     @Override
-    public List<String> getChildsDestinationName(String nodeName) {
+    public List<String> getChildrenDestinationName(String nodeName) {
         return null;
     }
 }

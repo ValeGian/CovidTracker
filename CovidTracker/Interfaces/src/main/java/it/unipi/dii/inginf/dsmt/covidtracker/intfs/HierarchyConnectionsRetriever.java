@@ -10,6 +10,6 @@ public interface HierarchyConnectionsRetriever {
 
     String getParentDestinationName(final String nodeName);
 
-    List<String> getChildsDestinationName(final String nodeName);
+    List<String> getChildrenDestinationName(final String nodeName);
 
 }
