@@ -1,5 +1,9 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.area;
 
+import com.google.gson.Gson;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.ejbs.DailyReport;
+import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
 import javafx.util.Pair;
 
@@ -8,10 +12,9 @@ import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.List;
-
-//NOTA GENERALE: per ora gestisco tutto nel bean, ma preferirei chiamare un metodo statico di questa classe e far gestire tutto a lui
-//ditemi cosa ne pensate e decidiamo (va fatto tutti uguale)
 
 public class AreaNode implements MessageListener {
 
@@ -22,22 +25,26 @@ public class AreaNode implements MessageListener {
 
     @EJB public static AreaConsumer myConsumer;
 
-    @EJB public static CommunicationMessage myCommunicationMessage;
+    public static CommunicationMessage myCommunicationMessage;
 
     @EJB public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
     public static void main(String[] args) {
         if (args.length == 1) {
             String name = args[0];
+            try {
+                setMessageListener(myHierarchyConnectionsRetriever.getMyDestinationName(name));
 
-            setMessageListener(myHierarchyConnectionsRetriever.getMyDestinationName(name));
+                myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
 
-            myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
+                myProducer.enqueue(myHierarchyConnectionsRetriever.getParentDestinationName(name), myCommunicationMessage);
 
-            myProducer.enqueue(myHierarchyConnectionsRetriever.getParentDestinationName(name), myCommunicationMessage);
-
-            List<String> myRegions = myHierarchyConnectionsRetriever.getChildrenDestinationName(name);
-            myConsumer.initializeParameters(name, myRegions, myHierarchyConnectionsRetriever.getParentDestinationName(name));
+                List<String> myRegions = myHierarchyConnectionsRetriever.getChildrenDestinationName(name);
+                myConsumer.initializeParameters(name, myRegions, myHierarchyConnectionsRetriever.getParentDestinationName(name));
+            }catch (IOException parseException){
+                System.err.println(parseException.getMessage());
+                return;
+            }
         }
     }
 
@@ -55,49 +62,65 @@ public class AreaNode implements MessageListener {
 
     public static AreaNode getInstance() { return instance; }
 
-
     @Override
     public void onMessage(Message msg) {
         if (msg instanceof ObjectMessage) {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
-                Pair<String, CommunicationMessage> returnPair;
+                Pair<String, CommunicationMessage> messageToSend;
                 switch (cMsg.getMessageType()) {
                     case NO_ACTION_REQUEST:
                         break;
+
                     case CONNECTION_ACCEPTED:
                         myConsumer.handleAcceptedConnection();
                         break;
+
                     case CONNECTION_REFUSED:
                         handleConnectionRefused();
-                    case CONNECTION_REQUEST:
-                        returnPair = myConsumer.handleConnectionRequest(cMsg);
-                        if(returnPair != null)
-                            myProducer.enqueue(returnPair.getKey(), returnPair.getValue());
                         break;
+
+                    case CONNECTION_REQUEST:
+                        messageToSend = myConsumer.handleConnectionRequest(cMsg);
+                        if(messageToSend != null)
+                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
+                        break;
+
                     case REGISTRY_CLOSURE_REQUEST:
                         List<Pair<String, CommunicationMessage>> returnList= myConsumer.handleRegistryClosureRequest(cMsg);
+                        if(returnList != null)
+                            for(Pair<String, CommunicationMessage> messageToSendL: returnList)
+                                myProducer.enqueue(messageToSendL.getKey(), messageToSendL.getValue());
                         break;
+
                     case AGGREGATION_REQUEST:
-                        returnPair = myConsumer.handleAggregationRequest(cMsg);
-                        if(!returnPair.getKey().equals("mySelf"))
-                            myProducer.enqueue(returnPair.getKey(), returnPair.getValue());
+                        messageToSend = myConsumer.handleAggregationRequest(cMsg);
+                        if(!messageToSend.getKey().equals("mySelf"))
+                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                         else
                             handleAggregation(cMsg);
                         break;
 
                     case DAILY_REPORT:
-                        returnPair = myConsumer.handleDailyReport(cMsg);
-                        if(returnPair != null)
-                            myProducer.enqueue(returnPair.getKey(), returnPair.getValue());
+                        messageToSend = myConsumer.handleDailyReport(cMsg);
+                        if(messageToSend != null) {
+                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
+                            addDailyReport(new Gson().fromJson(messageToSend.getValue().getMessageBody(), DailyReport.class));
+                        }
                         break;
+
                     default:
                         break;
+
                 }
             } catch (final JMSException e) {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void addDailyReport(DailyReport dailyReport) {
+        //aggiungi dailyReport al key-value;
     }
 
     private void handleConnectionRefused() {

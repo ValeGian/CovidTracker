@@ -1,12 +1,12 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
 import com.google.gson.Gson;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.AreaConsumer;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.MessageType;
+
 import javafx.util.Pair;
 
-import javax.ejb.EJB;
 import javax.ejb.Stateful;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +22,9 @@ public class AreaConsumerBean implements AreaConsumer {
     boolean connected;
     String myParent;
 
-    @EJB CommunicationMessage myCommunicationMessage;
+    CommunicationMessage myCommunicationMessage;
 
+    @Override
     public void initializeParameters(String name, List<String> myRegions, String parent) {
         this.name = name;
         this.myRegions = myRegions;
@@ -32,6 +33,7 @@ public class AreaConsumerBean implements AreaConsumer {
         myParent = parent;
     }
 
+    @Override
     public Pair<String, CommunicationMessage> handleDailyReport(CommunicationMessage cMsg) {
         String senderQueue = cMsg.getSenderName();
         String body = cMsg.getMessageBody();
@@ -71,7 +73,7 @@ public class AreaConsumerBean implements AreaConsumer {
         return true;
     }
 
-
+    @Override
     public Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg) {
         String senderQueue = cMsg.getSenderName();
         String json = cMsg.getMessageBody();
@@ -86,12 +88,11 @@ public class AreaConsumerBean implements AreaConsumer {
         }else if(dest.equals(name)) {  //diretto a me e rispondo io
             return new Pair<>("mySelf", cMsg);
 
-
         }else //diretto a qualcun'altro e inoltro a nazione
             return new Pair<>(myParent, cMsg);
     }
 
-
+    @Override
     public List<Pair<String, CommunicationMessage>> handleRegistryClosureRequest(CommunicationMessage cMsg) {
         if(!waitingReport) {
             waitingReport = true;
@@ -106,6 +107,7 @@ public class AreaConsumerBean implements AreaConsumer {
         return null;
     }
 
+    @Override
     public Pair<String, CommunicationMessage> handleConnectionRequest(CommunicationMessage cMsg) {
         String senderQueue = cMsg.getSenderName();
         String regionName = cMsg.getMessageBody();
