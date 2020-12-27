@@ -4,18 +4,10 @@ import it.unipi.dii.inginf.dsmt.covidtracker.area.AreaNode;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.MessageType;
 
-import javax.ejb.ActivationConfigProperty;
-import javax.ejb.MessageDriven;
 import javax.jms.*;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-@MessageDriven(name = "AreaConsumerEJB",
-        activationConfig = {
-                @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = AreaNode.nome),
-                @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Queue"),
-        })
+
 public class AreaConsumerBean implements MessageListener {
     //private final MongoClient client;
     //private final MongoDatabase mongoDB;
@@ -56,11 +48,11 @@ public class AreaConsumerBean implements MessageListener {
     private void handleDailyReport(CommunicationMessage cMsg) {
         String senderQueue = cMsg.getSenderName();
         int index = AreaNode.myRegions.indexOf(senderQueue);
-        if(AreaNode.state.equals("WAITING") && index != -1 && !AreaNode.receivedDailyReport[index]){
+        if(AreaNode.waitingReport && index != -1 && !AreaNode.receivedDailyReport[index]){
             //aggiungi in qualche modo da qualche parte il dato di cMsg.getMessageBody();
             AreaNode.receivedDailyReport[index] = true;
             if(AllReportArrived()) {
-                AreaNode.state = "NORMAL";
+                AreaNode.waitingReport = false;
                 AreaNode.myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
                 AreaNode.myCommunicationMessage.setSenderName(AreaNode.nome);
                 AreaNode.myCommunicationMessage.setMessageBody("qui andranno i dati calcolati come aggragazioni delle varie cose");
@@ -101,8 +93,8 @@ public class AreaConsumerBean implements MessageListener {
     }
 
     private void handleRegistryClosureRequest(CommunicationMessage cMsg) {
-        if(AreaNode.state.equals("NORMAL")) {
-            AreaNode.state = "WAITING";
+        if(!AreaNode.waitingReport) {
+            AreaNode.waitingReport = true;
             for (int i = 0; i < AreaNode.myRegions.size(); i++) {
                 AreaNode.receivedDailyReport[i] = false;
                 AreaNode.myCommunicationMessage.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
