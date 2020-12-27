@@ -1,4 +1,4 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
+package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
 public class DailyReport {
     private int totalTampons;
