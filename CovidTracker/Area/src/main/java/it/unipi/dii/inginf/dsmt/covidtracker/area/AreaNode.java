@@ -1,50 +1,44 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.area;
 
-import it.unipi.dii.inginf.dsmt.covidtracker.ejbs.AreaConsumerBean;
-import it.unipi.dii.inginf.dsmt.covidtracker.ejbs.AreaConsumerBean2;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.MessageType;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
+import javafx.util.Pair;
 
 import javax.ejb.EJB;
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import java.util.ArrayList;
+import java.util.List;
 
 //NOTA GENERALE: per ora gestisco tutto nel bean, ma preferirei chiamare un metodo statico di questa classe e far gestire tutto a lui
 //ditemi cosa ne pensate e decidiamo (va fatto tutti uguale)
 
-public class AreaNode {
-    public static String nome; //problema enorme perché dobbiamo per forza decidere il nome a compile
-                                                        // time e quindi dobbiamo avere un modulo diverso per ogni area/regione
-    public static ArrayList<String> myRegions; //salva le sue regioni
-    public static boolean[] connectedRegions; //tiene traccia delle regioni connesse
+public class AreaNode implements MessageListener {
 
-    public static boolean[] receivedDailyReport; //tiene traccia di chi ha inviato i report
-    public static boolean waitingReport; //tiene traccia dei daily report e per ora ho pensato a due stati: WAITING per i report o NORMAL
-
+    private final static AreaNode instance = new AreaNode();
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
-    @EJB
-    public static Producer myProducer;
+    @EJB public static Producer myProducer;
 
-    @EJB
-    public static AreaConsumerBean2 myConsumer;
+    @EJB public static AreaConsumer myConsumer;
 
-    @EJB
-    public static CommunicationMessage myCommunicationMessage;
+    @EJB public static CommunicationMessage myCommunicationMessage;
+
+    @EJB public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
     public static void main(String[] args) {
-        if(args.length == 1)
-            setMessageListener(args[0]);
+        if (args.length == 1) {
+            String name = args[0];
 
-        String myName = args[0];
-        myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
-        myProducer.enqueue("jms/nationQueue", myCommunicationMessage);
-        myRegions = new ArrayList<>();//getMyRegions(myName) che è un metodo della remota;
-        connectedRegions = new boolean[myRegions.size()];
+            setMessageListener(myHierarchyConnectionsRetriever.getMyDestinationName(name));
+
+            myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
+
+            myProducer.enqueue(myHierarchyConnectionsRetriever.getParentDestinationName(name), myCommunicationMessage);
+
+            List<String> myRegions = myHierarchyConnectionsRetriever.getChildrenDestinationName(name);
+            myConsumer.initializeParameters(name, myRegions, myHierarchyConnectionsRetriever.getParentDestinationName(name));
+        }
     }
 
     static void setMessageListener(final String QUEUE_NAME) {
@@ -52,11 +46,69 @@ public class AreaNode {
             Context ic = new InitialContext();
             Queue myQueue = (Queue) ic.lookup(QUEUE_NAME);
             QueueConnectionFactory qcf = (QueueConnectionFactory) ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(new AreaConsumerBean());
+            qcf.createContext().createConsumer(myQueue).setMessageListener(AreaNode.getInstance());
         } catch (NamingException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
 
+    public static AreaNode getInstance() { return instance; }
+
+
+    @Override
+    public void onMessage(Message msg) {
+        if (msg instanceof ObjectMessage) {
+            try {
+                CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
+                Pair<String, CommunicationMessage> returnPair;
+                switch (cMsg.getMessageType()) {
+                    case NO_ACTION_REQUEST:
+                        break;
+                    case CONNECTION_ACCEPTED:
+                        myConsumer.handleAcceptedConnection();
+                        break;
+                    case CONNECTION_REFUSED:
+                        handleConnectionRefused();
+                    case CONNECTION_REQUEST:
+                        returnPair = myConsumer.handleConnectionRequest(cMsg);
+                        if(returnPair != null)
+                            myProducer.enqueue(returnPair.getKey(), returnPair.getValue());
+                        break;
+                    case REGISTRY_CLOSURE_REQUEST:
+                        List<Pair<String, CommunicationMessage>> returnList= myConsumer.handleRegistryClosureRequest(cMsg);
+                        break;
+                    case AGGREGATION_REQUEST:
+                        returnPair = myConsumer.handleAggregationRequest(cMsg);
+                        if(!returnPair.getKey().equals("mySelf"))
+                            myProducer.enqueue(returnPair.getKey(), returnPair.getValue());
+                        else
+                            handleAggregation(cMsg);
+                        break;
+
+                    case DAILY_REPORT:
+                        returnPair = myConsumer.handleDailyReport(cMsg);
+                        if(returnPair != null)
+                            myProducer.enqueue(returnPair.getKey(), returnPair.getValue());
+                        break;
+                    default:
+                        break;
+                }
+            } catch (final JMSException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void handleConnectionRefused() {
+        //CHIUDI TUTTO E TERMINA
+    }
+
+    private void handleAggregation(CommunicationMessage cMsg) {
+        String json = cMsg.getMessageBody();
+        String type = "";
+        String initDate = "";
+        String offset ="";
+        //fai cose
+    }
 }
