@@ -33,7 +33,6 @@
             <artifactId>leveldb</artifactId>
             <version>0.12</version>
         </dependency>
-
         <dependency>
             <groupId>javax.jms</groupId>
             <artifactId>javax.jms-api</artifactId>
@@ -51,18 +50,6 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>it.unipi.dii.inginf.dsmt.covidtracker.intfs</groupId>
-            <artifactId>Interfaces</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>it.unipi.dii.inginf.dsmt.covidtracker.ejbs</groupId>
-            <artifactId>Beans</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>it.unipi.dii.inginf.dsmt.covidtracker.intfs</groupId>
