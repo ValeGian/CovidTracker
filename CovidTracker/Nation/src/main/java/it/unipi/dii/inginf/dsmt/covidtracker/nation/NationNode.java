@@ -1,6 +1,7 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.nation;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.NationConsumer;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
@@ -40,20 +41,8 @@ public class NationNode implements MessageListener {
     public static NationNode getInstance() { return instance; }
 
     public static void main(String[] args) {
-        setMessageListener(myDestinationName);
-    }
-
-    static void setMessageListener(final String QUEUE_NAME) {
-        try{
-            Context ic = new InitialContext();
-            Queue myQueue= (Queue)ic.lookup(QUEUE_NAME);
-            QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(instance);
-        }
-        catch (final NamingException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        }
+        instance.setMessageListener(myDestinationName);
+        myConsumer.initializeParameters(myDestinationName, myChildrenDestinationNames);
     }
 
     @Override
@@ -68,8 +57,7 @@ public class NationNode implements MessageListener {
 
                     case CONNECTION_REQUEST:
                         messageToSend = myConsumer.handleConnectionRequest(cMsg);
-                        if(messageToSend != null)
-                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
+                        myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                         break;
 
                     case AGGREGATION_REQUEST:
@@ -81,10 +69,9 @@ public class NationNode implements MessageListener {
                         break;
 
                     case DAILY_REPORT:
-                        messageToSend = myConsumer.handleDailyReport(cMsg);
-                        if(messageToSend != null) {
-                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                            addDailyReport(new Gson().fromJson(messageToSend.getValue().getMessageBody(), DailyReport.class));
+                        List<DailyReport> childrenDailyReports = myConsumer.handleDailyReport(cMsg);
+                        if(childrenDailyReports != null) {
+                            saveDailyReport(childrenDailyReports);
                         }
                         break;
 
@@ -97,4 +84,29 @@ public class NationNode implements MessageListener {
             }
         }
     }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+
+    void setMessageListener(final String QUEUE_NAME) {
+        try{
+            Context ic = new InitialContext();
+            Queue myQueue= (Queue)ic.lookup(QUEUE_NAME);
+            QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
+            qcf.createContext().createConsumer(myQueue).setMessageListener(instance);
+        }
+        catch (final NamingException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    void saveDailyReport(List<DailyReport> childrenDailyReports) {
+        DailyReport dailyReport = new DailyReport();
+        for(DailyReport childDailyReport: childrenDailyReports) {
+            dailyReport.addAll(childDailyReport);
+        }
+        //Salvare i totali giornalieri su LevelDB
+    }
+
 }
