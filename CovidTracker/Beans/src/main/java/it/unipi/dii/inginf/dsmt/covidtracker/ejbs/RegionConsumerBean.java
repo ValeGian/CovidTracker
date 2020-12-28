@@ -1,17 +1,19 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
+import com.google.gson.Gson;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionConsumer;
 import javafx.util.Pair;
 
 import javax.ejb.Stateful;
-import java.util.List;
 
 @Stateful(name = "RegionConsumerEJB")
 public class RegionConsumerBean implements RegionConsumer {
 
-    String name;
+    String myName;
     boolean registryOpened;
     String myParent;
     int connectionState; //equal to:  0 if the connection is pending
@@ -21,10 +23,11 @@ public class RegionConsumerBean implements RegionConsumer {
     CommunicationMessage myCommunicationMessage;
 
     @Override
-    public void initializeParameters(String name, String parent) {
-        this.name = name;
+    public void initializeParameters(String myName, String parent) {
+        this.myName = myName;
         connectionState = 0;
         myParent = parent;
+        myCommunicationMessage.setSenderName(myName);
     }
 
     @Override
@@ -47,19 +50,19 @@ public class RegionConsumerBean implements RegionConsumer {
         if (connectionState != 1)
             return null;
 
-        String requester =  ""; //coda del richiedente da ottenere dal corpo del messaggio
-        String aggregationType = ""; //tipo di aggregazione da ottenere dal corpo del messaggio
-        String aggregationResult = ""; //qui andranno i risultati dell'aggragazione
+        Gson gson = new Gson();
+        AggregationRequest aggregationRequest = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
 
-        switch (aggregationType){
+        switch (aggregationRequest.getType()){
             //eseguo l'aggregazione richiesta interfacciandomi con Mongo per ottenere i log necessari
         }
 
         myCommunicationMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
-        myCommunicationMessage.setMessageBody(aggregationResult);
-        return new Pair<>(requester, myCommunicationMessage);
+        //myCommunicationMessage.setMessageBody(aggregationResult);
+        return new Pair<>(cMsg.getSenderName(), myCommunicationMessage);
     }
 
+    @Override
     public void handleAggregationResponse(CommunicationMessage cMsg){
         if (connectionState != 1)
             return;
@@ -69,12 +72,22 @@ public class RegionConsumerBean implements RegionConsumer {
         //invio dei risultati dell'aggregazione a myRegionWeb che li mostrerà a video
     }
 
+    @Override
     public void handleConnectionAccepted(CommunicationMessage cMsg){
         connectionState = 1;
         myParent = cMsg.getSenderName();
     }
 
+    @Override
     public void handleConnectionRefused(CommunicationMessage cMsg){
         connectionState = -1;
+    }
+
+    @Override
+    public void handleNewData(CommunicationMessage cMsg) {
+        Gson gson = new Gson();
+        DataLog dataLog = gson.fromJson(cMsg.getMessageBody(), DataLog.class);
+
+        //memorizzazione del log su mongodb
     }
 }
