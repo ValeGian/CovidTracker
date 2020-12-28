@@ -1,24 +1,24 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
 public class DailyReport {
-    private int totalTampons;
+    private int totalSwab;
     private int totalPositive;
     private int totalNegative;
     private int totalDead;
 
-    public int getTotalTampons() {
-        return totalTampons;
+    public int getTotalSwab() {
+        return totalSwab;
     }
 
     public void addAll(DailyReport reportToAggregate){
-        this.totalTampons += reportToAggregate.totalTampons;
+        this.totalSwab += reportToAggregate.totalSwab;
         this.totalPositive += reportToAggregate.totalPositive;
         this.totalNegative += reportToAggregate.totalNegative;
         this.totalDead += reportToAggregate.totalDead;
     }
 
-    public void addTotalTampons(int totalTampons) {
-        this.totalTampons += totalTampons;
+    public void addTotalSwab(int totalSwab) {
+        this.totalSwab += totalSwab;
     }
 
     public int getTotalPositive() {

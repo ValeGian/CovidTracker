@@ -14,6 +14,6 @@ public interface AreaConsumer {
     Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg);
     List<Pair<String, CommunicationMessage>> handleRegistryClosureRequest(CommunicationMessage cMsg);
     Pair<String, CommunicationMessage> handleConnectionRequest(CommunicationMessage cMsg);
-
     void handleAcceptedConnection();
+    Pair<String, CommunicationMessage> requestConnectionToParent();
 }

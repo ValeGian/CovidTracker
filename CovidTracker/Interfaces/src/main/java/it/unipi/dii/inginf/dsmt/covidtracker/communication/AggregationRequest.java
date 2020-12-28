@@ -6,6 +6,7 @@ public class AggregationRequest {
     private String operation;
     private String startDay; //formato "dd/MM/yyyy"
     private String lastDay;  //formato "dd/MM/yyyy"
+    private double result;
 
     public String getType() {
         return type;
@@ -46,6 +47,10 @@ public class AggregationRequest {
     public void setOperation(String operation) {
         this.operation = operation;
     }
+
+    public double getResult() { return result; }
+
+    public void setResult(double result) { this.result = result; }
 
     public String toKey(){
         return type + ":" + operation + ":" + startDay + ":" + lastDay;

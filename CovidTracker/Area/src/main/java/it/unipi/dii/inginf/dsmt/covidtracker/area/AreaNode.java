@@ -1,11 +1,13 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.area;
 
 import com.google.gson.Gson;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.ejbs.DailyReport;
-import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
+import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManager;
 import javafx.util.Pair;
+import org.json.simple.parser.ParseException;
 
 import javax.ejb.EJB;
 import javax.jms.*;
@@ -13,19 +15,17 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.List;
 
 public class AreaNode implements MessageListener {
 
     private final static AreaNode instance = new AreaNode();
+    private static final KVManager myDb = new KVManager();
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     @EJB public static Producer myProducer;
 
     @EJB public static AreaConsumer myConsumer;
-
-    public static CommunicationMessage myCommunicationMessage;
 
     @EJB public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
@@ -33,34 +33,35 @@ public class AreaNode implements MessageListener {
         if (args.length == 1) {
             String name = args[0];
             try {
-                setMessageListener(myHierarchyConnectionsRetriever.getMyDestinationName(name));
+                String myJNDIQueue = myHierarchyConnectionsRetriever.getMyDestinationName(name);
+                instance.setMessageListener(myJNDIQueue);
 
-                myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
+                myConsumer.initializeParameters(myJNDIQueue, myHierarchyConnectionsRetriever.getChildrenDestinationName(name), myHierarchyConnectionsRetriever.getParentDestinationName(name));
+                Pair<String, CommunicationMessage> messageToSend = myConsumer.requestConnectionToParent();
+                myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
 
-                myProducer.enqueue(myHierarchyConnectionsRetriever.getParentDestinationName(name), myCommunicationMessage);
-
-                List<String> myRegions = myHierarchyConnectionsRetriever.getChildrenDestinationName(name);
-                myConsumer.initializeParameters(name, myRegions, myHierarchyConnectionsRetriever.getParentDestinationName(name));
-            }catch (IOException parseException){
-                System.err.println(parseException.getMessage());
-                return;
+            }catch (IOException | ParseException parseException){
+                throw new RuntimeException(parseException);
             }
         }
     }
 
-    static void setMessageListener(final String QUEUE_NAME) {
-        try {
+    private AreaNode(){}
+
+    public static AreaNode getInstance() { return instance; }
+
+    void setMessageListener(final String QUEUE_NAME) {
+        try{
             Context ic = new InitialContext();
-            Queue myQueue = (Queue) ic.lookup(QUEUE_NAME);
-            QueueConnectionFactory qcf = (QueueConnectionFactory) ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(AreaNode.getInstance());
-        } catch (NamingException e) {
+            Queue myQueue = (Queue)ic.lookup(QUEUE_NAME);
+            QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
+            qcf.createContext().createConsumer(myQueue).setMessageListener(instance);
+        }
+        catch (final NamingException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
-
-    public static AreaNode getInstance() { return instance; }
 
     @Override
     public void onMessage(Message msg) {
@@ -105,7 +106,7 @@ public class AreaNode implements MessageListener {
                         messageToSend = myConsumer.handleDailyReport(cMsg);
                         if(messageToSend != null) {
                             myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                            addDailyReport(new Gson().fromJson(messageToSend.getValue().getMessageBody(), DailyReport.class));
+                            myDb.addDailyReport(new Gson().fromJson(messageToSend.getValue().getMessageBody(), DailyReport.class));
                         }
                         break;
 
@@ -119,19 +120,25 @@ public class AreaNode implements MessageListener {
         }
     }
 
-    private void addDailyReport(DailyReport dailyReport) {
-        //aggiungi dailyReport al key-value;
-    }
 
     private void handleConnectionRefused() {
         //CHIUDI TUTTO E TERMINA
     }
 
     private void handleAggregation(CommunicationMessage cMsg) {
-        String json = cMsg.getMessageBody();
-        String type = "";
-        String initDate = "";
-        String offset ="";
-        //fai cose
+
+        Gson converter = new Gson();
+        AggregationRequest aggregationRequested = converter.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+        double result = myDb.getAggregation(aggregationRequested);
+        CommunicationMessage aggregationResponse = new CommunicationMessage();
+
+        if(result == -1.0){
+            result = 0;//getAggregationFromErlang();
+            myDb.saveAggregation(aggregationRequested, result);
+        }
+
+        aggregationRequested.setResult(result);
+        aggregationResponse.setMessageBody(converter.toJson(aggregationRequested));
+        myProducer.enqueue(cMsg.getSenderName(), aggregationResponse);
     }
 }
