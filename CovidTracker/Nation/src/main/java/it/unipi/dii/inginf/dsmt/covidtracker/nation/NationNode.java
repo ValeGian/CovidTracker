@@ -2,6 +2,7 @@ package it.unipi.dii.inginf.dsmt.covidtracker.nation;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
+import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.NationConsumer;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
@@ -14,35 +15,52 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Scanner;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class NationNode implements MessageListener {
 
     private final static NationNode instance = new NationNode();
+    private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private static ScheduledFuture<?> dailyReporterHandle = null;
 
-    final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
-    final static String myName = "nation";
-    static String myDestinationName;
-    static List<String> myChildrenDestinationNames;
+    private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
+    private final static String myName = "nation";
+    private static String myDestinationName;
+    private static List<String> myChildrenDestinationNames;
 
     @EJB static Producer myProducer;
     @EJB static NationConsumer myConsumer;
     @EJB public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
     private NationNode() {
-        try {
-            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
-            myChildrenDestinationNames = myHierarchyConnectionsRetriever.getChildrenDestinationName(myName);
-        } catch (final IOException|ParseException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static NationNode getInstance() { return instance; }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, ParseException {
+
+        myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
+        myChildrenDestinationNames = myHierarchyConnectionsRetriever.getChildrenDestinationName(myName);
+
         instance.setMessageListener(myDestinationName);
         myConsumer.initializeParameters(myDestinationName, myChildrenDestinationNames);
+
+        instance.restartDailyThread();
+
+        System.out.println("Type REGISTRY_CLOSURE to close the daily reports: ");
+        Scanner sc = new Scanner(System.in);
+        while(true) {
+            System.out.print("> ");
+            instance.handleUserInput(sc.next());
+        }
     }
 
     @Override
@@ -107,6 +125,48 @@ public class NationNode implements MessageListener {
             dailyReport.addAll(childDailyReport);
         }
         //Salvare i totali giornalieri su LevelDB
+    }
+
+    void restartDailyThread() {
+        if(dailyReporterHandle != null)
+            dailyReporterHandle.cancel(true);
+
+        final Runnable dailyReporter = new Runnable() {
+            @Override
+            public void run() {
+                instance.sendRegistryClosureRequests();
+            }
+        };
+
+        dailyReporterHandle = scheduler.scheduleAtFixedRate(dailyReporter, secondsUntilMidnight(), 60*60*24, TimeUnit.SECONDS);
+
+    }
+
+    void sendRegistryClosureRequests() {
+        CommunicationMessage regClosureMsg = new CommunicationMessage();
+        regClosureMsg.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
+        regClosureMsg.setSenderName(myDestinationName);
+
+        for(String childDestinationName: myChildrenDestinationNames)
+            myProducer.enqueue(childDestinationName, regClosureMsg);
+    }
+
+    void handleUserInput(String userInput) {
+        if(userInput.equals("REGISTRY_CLOSURE")) {
+            sendRegistryClosureRequests();
+            restartDailyThread();
+        } else {
+            System.out.println("Command not recognized!");
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    long secondsUntilMidnight() {
+        ZoneId zone = ZoneId.of("Europe/Rome");
+        ZonedDateTime now = ZonedDateTime.now(zone);
+        ZonedDateTime midnight = now.toLocalDate().plusDays(1).atStartOfDay(zone);
+        return Duration.between(now, midnight).getSeconds();
     }
 
 }

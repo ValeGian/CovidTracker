@@ -4,10 +4,10 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import javafx.util.Pair;
 
-import javax.ejb.Remote;
+import javax.ejb.Local;
 import java.util.List;
 
-@Remote
+@Local
 public interface NationConsumer {
 
     void initializeParameters(String name, List<String> childrenAreas);
