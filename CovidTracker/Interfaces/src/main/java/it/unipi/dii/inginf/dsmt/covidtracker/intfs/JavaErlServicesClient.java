@@ -6,6 +6,6 @@ import java.util.List;
 @Remote
 public interface JavaErlServicesClient {
 
-        double getAggregation(String operation, List<Integer> reports);
+        double computeAggregation(String operation, List<Integer> reports);
 
 }

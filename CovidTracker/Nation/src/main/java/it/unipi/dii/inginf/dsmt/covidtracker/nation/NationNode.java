@@ -177,7 +177,7 @@ public class NationNode implements MessageListener {
         } else {
             result = myKVManager.getAggregation(aggrReq);
             if(result == -1.0){
-                result = myErlangClient.getAggregation(
+                result = myErlangClient.computeAggregation(
                         aggrReq.getOperation(),
                         myKVManager.getDailyReportsInAPeriod(aggrReq.getStartDay(), aggrReq.getLastDay(), aggrReq.getType())
                 );
