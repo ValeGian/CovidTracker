@@ -1,15 +1,19 @@
 package it.unipi.dii.inginf.dsmt.covidtracker;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionConsumer;
 import javafx.util.Pair;
+import org.json.simple.parser.ParseException;
 
 import javax.ejb.EJB;
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import java.io.IOException;
 
 
 public class RegionNode implements MessageListener {
@@ -24,28 +28,32 @@ public class RegionNode implements MessageListener {
     @EJB
     public static RegionConsumer myConsumer;
 
+    @EJB
+    public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+
     private static RegionNode istance;
 
     public static void main(String[] args) {
-
-        /*
-        if (args.length != 2)
+        if (args.length != 1)
             return;
+        try {
+            String myName = myHierarchyConnectionsRetriever.getMyDestinationName(args[0]);
+            String myArea = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
+            myConsumer.initializeParameters(myName, myArea);
 
-        String myName = args[0];
-        myArea = args[1];
-        connectionState = 0;
+            setMessageListener(myName);
 
-        setMessageListener(myName);
+            myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
+            myProducer.enqueue(myArea, myCommunicationMessage);
 
-        myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
-        myProducer.enqueue(myArea, myCommunicationMessage);
+            //RegionNode resta in attesa della ricezione dei messaggi da parte di RegionWeb o da altri nodi
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
 
-        //RegionNode resta in attesa della ricezione dei messaggi da parte di RegionWeb o da altri nodi
-        while(true);
 
-
-         */
 
         // Esempio per Region e Area, in Nazione non ha senso dato che ce n'è solo una
         //if(args.length == 1) {
@@ -110,6 +118,9 @@ public class RegionNode implements MessageListener {
                         break;
                     case AGGREGATION_RESPONSE:
                         myConsumer.handleAggregationResponse(cMsg);
+                        break;
+                    case NEW_DATA:
+                        myConsumer.handleNewData(cMsg);
                         break;
                     default:
                         break;

@@ -14,4 +14,5 @@ public interface RegionConsumer {
     void handleAggregationResponse(CommunicationMessage cMsg);
     void handleConnectionAccepted(CommunicationMessage cMsg);
     void handleConnectionRefused(CommunicationMessage cMsg);
+    void handleNewData(CommunicationMessage cMsg);
 }
