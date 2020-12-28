@@ -3,6 +3,7 @@ package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionConsumer;
@@ -31,15 +32,25 @@ public class RegionConsumerBean implements RegionConsumer {
     }
 
     @Override
+    public Pair<String, CommunicationMessage> handlePing(CommunicationMessage cMsg) {
+        myCommunicationMessage.setMessageType(MessageType.PONG);
+        return new Pair<>(cMsg.getSenderName(), myCommunicationMessage);
+    }
+
+    @Override
     public Pair<String, CommunicationMessage> handleRegistryClosureRequest(CommunicationMessage cMsg) {
         if (connectionState != 1)
             return null;
+
+        Gson gson = new Gson();
 
         if (registryOpened){
             registryOpened = false;
             myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
             //recupero di tutti i dati giornalieri
-            myCommunicationMessage.setMessageBody(""); //immissione dei dati nel corpo del messaggio
+            DailyReport dailyReport = null;
+
+            myCommunicationMessage.setMessageBody(gson.toJson(dailyReport)); //immissione dei dati nel corpo del messaggio
             return new Pair<>(myParent, myCommunicationMessage);
         }
         return null;
@@ -75,7 +86,6 @@ public class RegionConsumerBean implements RegionConsumer {
     @Override
     public void handleConnectionAccepted(CommunicationMessage cMsg){
         connectionState = 1;
-        myParent = cMsg.getSenderName();
     }
 
     @Override

@@ -52,24 +52,7 @@ public class RegionNode implements MessageListener {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-
-
-
-        // Esempio per Region e Area, in Nazione non ha senso dato che ce n'è solo una
-        //if(args.length == 1) {
-            //String myName = args[0];
-            // usare il nome (e.g. "centro") per recuperare le informazioni hostate nel file
-            // utili per il futuro inoltro dei messaggi e mandare messaggi di connessione
-            // e.g. "centro" manda messaggio di connessione a "nazione", il quale JNDI è
-            // stato recuperato dal file, e poi attende risposta da "nazione" per sapere se
-            // la connessione è andata a buon fine, ovvero se non si già era collegato
-            // qualcun altro come "centro"; tale risposta viene gestita direttamente
-            // da il metodo onMessage del proprio ConsumerBean hostato sullo stesso nodo
-            // (prendere come riferimento NationConsumerBean nel modulo Nation)
-            //String nationName = getNationName(myName); //metodo di utility per ottenere informazioni dal file hostato
-            //myCommunicationMessage.setMessageBody(MessageType.CONNECTION_REQUEST);
-            //myProducer.enqueue(nationName, myCommunicationMessage);
-        }
+    }
 
     static void setMessageListener(final String QUEUE_NAME) {
         try {
@@ -99,6 +82,10 @@ public class RegionNode implements MessageListener {
                 Pair<String, CommunicationMessage> messageToSend;
                 switch (cMsg.getMessageType()) {
                     case NO_ACTION_REQUEST:
+                        break;
+                    case PING:
+                        messageToSend = myConsumer.handlePing(cMsg);
+                        myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                         break;
                     case CONNECTION_ACCEPTED:
                         myConsumer.handleConnectionAccepted(cMsg);
