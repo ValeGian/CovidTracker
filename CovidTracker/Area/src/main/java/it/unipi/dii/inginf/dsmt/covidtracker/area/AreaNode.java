@@ -6,7 +6,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
-import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManager;
+import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class AreaNode implements MessageListener {
 
     private final static AreaNode instance = new AreaNode();
-    private static final KVManager myDb = new KVManager();
+    private static final KVManagerImpl myDb = new KVManagerImpl();
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
     private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static ScheduledFuture<?> timeoutHandle = null;

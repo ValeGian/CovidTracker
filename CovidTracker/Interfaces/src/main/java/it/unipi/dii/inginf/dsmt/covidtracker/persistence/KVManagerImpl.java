@@ -2,11 +2,11 @@ package it.unipi.dii.inginf.dsmt.covidtracker.persistence;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.KVManager;
 import org.iq80.leveldb.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -17,11 +17,11 @@ import java.util.List;
 import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 
 
-public class KVManager {
+public class KVManagerImpl implements KVManager {
     private static final long startingPoint = (long) 1000 * 60 * 60 * 24 * 365 * 50;
 
 public static void main(String[] args){
-    KVManager kv = new KVManager();
+    KVManagerImpl kv = new KVManagerImpl();
     AggregationRequest a = new AggregationRequest();
     a.setStartDay("28/12/2020");
     a.setLastDay("31/12/2020");
@@ -103,7 +103,7 @@ public static void main(String[] args){
      * @param aggregation
      * @return -1 if not found or the aggregation's result
      */
-    public double getAggregation(AggregationRequest aggregation){
+    public double getAggregation(AggregationRequest aggregation) {
         String key = aggregation.toKey();
         double result = 0;
 
