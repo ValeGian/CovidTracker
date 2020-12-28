@@ -33,6 +33,7 @@ public class NationNode implements MessageListener {
     private final static NationNode instance = new NationNode();
     private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static ScheduledFuture<?> dailyReporterHandle = null;
+    private static ScheduledFuture<?> timeoutHandle = null;
 
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
     private final static String myName = "nation";
@@ -77,11 +78,6 @@ public class NationNode implements MessageListener {
                     case NO_ACTION_REQUEST:
                         break;
 
-                    case CONNECTION_REQUEST:
-                        messageToSend = myConsumer.handleConnectionRequest(cMsg);
-                        myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                        break;
-
                     case AGGREGATION_REQUEST:
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
                         if(messageToSend.getKey().equals(myDestinationName))
@@ -93,10 +89,7 @@ public class NationNode implements MessageListener {
                         break;
 
                     case DAILY_REPORT:
-                        List<DailyReport> childrenDailyReports = myConsumer.handleDailyReport(cMsg);
-                        if(childrenDailyReports != null) {
-                            saveDailyReport(childrenDailyReports);
-                        }
+                        myConsumer.handleDailyReport(cMsg);
                         break;
 
                     default:
@@ -125,22 +118,28 @@ public class NationNode implements MessageListener {
         }
     }
 
-    void saveDailyReport(List<DailyReport> childrenDailyReports) {
-        DailyReport dailyReport = new DailyReport();
-        for(DailyReport childDailyReport: childrenDailyReports) {
-            dailyReport.addAll(childDailyReport);
-        }
+    void saveDailyReport(DailyReport dailyReport) {
         myKVManager.addDailyReport(dailyReport);
     }
 
     void restartDailyThread() {
         if(dailyReporterHandle != null)
             dailyReporterHandle.cancel(true);
+        if(timeoutHandle != null)
+            timeoutHandle.cancel(true);
+
+        final Runnable timeout = new Runnable() {
+            @Override
+            public void run() {
+                saveDailyReport(myConsumer.getDailyReport());
+            }
+        };
 
         final Runnable dailyReporter = new Runnable() {
             @Override
             public void run() {
                 instance.sendRegistryClosureRequests();
+                timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60*30, TimeUnit.SECONDS);
             }
         };
 

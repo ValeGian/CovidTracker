@@ -12,10 +12,10 @@ public interface NationConsumer {
 
     void initializeParameters(String name, List<String> childrenAreas);
 
-    List<DailyReport> handleDailyReport(CommunicationMessage cMsg);
+    void handleDailyReport(CommunicationMessage cMsg);
+
+    DailyReport getDailyReport();
 
     Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg);
-
-    Pair<String, CommunicationMessage> handleConnectionRequest(CommunicationMessage cMsg);
 
 }
