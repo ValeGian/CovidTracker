@@ -60,7 +60,7 @@ public class NationNode implements MessageListener {
 
         instance.restartDailyThread();
 
-        System.out.println("Type REGISTRY_CLOSURE to close the daily reports: ");
+        System.out.println("Type REGISTRY_CLOSURE to close the daily report: ");
         Scanner sc = new Scanner(System.in);
         while(true) {
             System.out.print("> ");
@@ -166,16 +166,29 @@ public class NationNode implements MessageListener {
     }
 
     void handleAggregation(String requester, AggregationRequest aggrReq) {
-        double result = myKVManager.getAggregation(aggrReq);
-        CommunicationMessage aggregationResponse = new CommunicationMessage();
+        double result = 0.0;
 
-        if(result == -1.0){
-            result = 0;//getAggregationFromErlang();
-            myKVManager.saveAggregation(aggrReq, result);
+        CommunicationMessage aggregationResponse = new CommunicationMessage();
+        aggregationResponse.setMessageType(MessageType.AGGREGATION_RESPONSE);
+        aggregationResponse.setMessageBody(new Gson().toJson(aggrReq));
+
+        if (aggrReq.getStartDay() == null) {
+            result = myKVManager.getDailyReport(aggrReq.getLastDay(), aggrReq.getType());
+
+        } else if (aggrReq.getLastDay() == null) {
+            result = myKVManager.getDailyReport(aggrReq.getStartDay(), aggrReq.getType());
+
+        } else {
+            result = myKVManager.getAggregation(aggrReq);
+            if(result == -1.0){
+                result = getAggregationFromErlang(
+                        myKVManager.getDailyReportsInAPeriod(aggrReq.getStartDay(), aggrReq.getLastDay(), aggrReq.getType())
+                );
+                myKVManager.saveAggregation(aggrReq, result);
+            }
         }
 
         aggrReq.setResult(result);
-        aggregationResponse.setMessageBody(new Gson().toJson(aggrReq));
         myProducer.enqueue(requester, aggregationResponse);
     }
 
