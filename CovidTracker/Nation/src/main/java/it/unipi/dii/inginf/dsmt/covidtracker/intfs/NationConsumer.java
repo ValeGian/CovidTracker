@@ -14,6 +14,8 @@ public interface NationConsumer {
 
     List<DailyReport> handleDailyReport(CommunicationMessage cMsg);
 
+    Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg);
+
     Pair<String, CommunicationMessage> handleConnectionRequest(CommunicationMessage cMsg);
 
 }

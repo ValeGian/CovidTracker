@@ -1,6 +1,7 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
 import com.google.gson.Gson;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
@@ -14,7 +15,7 @@ import java.util.List;
 @Stateful(name = "NationConsumerEJB")
 public class NationConsumerBean implements NationConsumer {
 
-    String myName;
+    String myDestinationName;
     List<String> childrenAreas;
     boolean[] isConnectedArea;
     boolean[] isReceivedDailyReport;
@@ -26,7 +27,7 @@ public class NationConsumerBean implements NationConsumer {
 
     @Override
     public void initializeParameters(String nodeName, List<String> childrenAreas) {
-        myName = nodeName;
+        myDestinationName = nodeName;
         this.childrenAreas = childrenAreas;
         isConnectedArea = new boolean[childrenAreas.size()];
         isReceivedDailyReport = new boolean[childrenAreas.size()];
@@ -52,9 +53,26 @@ public class NationConsumerBean implements NationConsumer {
     }
 
     @Override
+    public Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg) {
+        AggregationRequest aggregationRequested = new Gson().fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+
+        String dest = aggregationRequested.getDestination();
+        int index = childrenAreas.indexOf(dest);
+
+        if(index != -1) {
+            return new Pair<>(childrenAreas.get(index), cMsg);
+
+        } else if(dest.equals(myDestinationName)) {
+            return new Pair<>(myDestinationName, cMsg);
+
+        } else
+            return new Pair<>("flood", cMsg);
+    }
+
+    @Override
     public Pair<String, CommunicationMessage> handleConnectionRequest(CommunicationMessage cMsg) {
         CommunicationMessage outMsg = new CommunicationMessage();
-        outMsg.setSenderName(myName);
+        outMsg.setSenderName(myDestinationName);
 
         String areaQueue = cMsg.getSenderName();
         String areaName = cMsg.getMessageBody();
