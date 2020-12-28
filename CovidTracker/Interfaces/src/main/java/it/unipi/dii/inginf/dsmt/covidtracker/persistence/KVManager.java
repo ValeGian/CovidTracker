@@ -126,4 +126,12 @@ public static void main(String[] args){
             ex.printStackTrace();
         }
     }
+
+    public double getDailyReport(String day, String type) {
+        List<Integer> result = getDailyReportsInAPeriod(day, day, type);
+        if(!result.isEmpty())
+            return result.get(0);
+
+        return -1;
+    }
 }

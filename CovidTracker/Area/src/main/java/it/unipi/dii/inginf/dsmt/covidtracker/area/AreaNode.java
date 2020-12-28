@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
+import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManager;
 import javafx.util.Pair;
@@ -16,12 +17,20 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class AreaNode implements MessageListener {
 
     private final static AreaNode instance = new AreaNode();
     private static final KVManager myDb = new KVManager();
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
+    private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private static ScheduledFuture<?> timeoutHandle = null;
+
+    private static final Runnable timeout = new Runnable() { public void run() { saveDailyReport(myConsumer.getDailyReport()); }};
 
     @EJB public static Producer myProducer;
 
@@ -37,9 +46,6 @@ public class AreaNode implements MessageListener {
                 instance.setMessageListener(myJNDIQueue);
 
                 myConsumer.initializeParameters(myJNDIQueue, myHierarchyConnectionsRetriever.getChildrenDestinationName(name), myHierarchyConnectionsRetriever.getParentDestinationName(name));
-                Pair<String, CommunicationMessage> messageToSend = myConsumer.requestConnectionToParent();
-                myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-
             }catch (IOException | ParseException parseException){
                 throw new RuntimeException(parseException);
             }
@@ -70,44 +76,27 @@ public class AreaNode implements MessageListener {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
                 Pair<String, CommunicationMessage> messageToSend;
                 switch (cMsg.getMessageType()) {
-                    case NO_ACTION_REQUEST:
-                        break;
-
-                    case CONNECTION_ACCEPTED:
-                        myConsumer.handleAcceptedConnection();
-                        break;
-
-                    case CONNECTION_REFUSED:
-                        handleConnectionRefused();
-                        break;
-
-                    case CONNECTION_REQUEST:
-                        messageToSend = myConsumer.handleConnectionRequest(cMsg);
-                        if(messageToSend != null)
-                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                        break;
 
                     case REGISTRY_CLOSURE_REQUEST:
                         List<Pair<String, CommunicationMessage>> returnList= myConsumer.handleRegistryClosureRequest(cMsg);
                         if(returnList != null)
                             for(Pair<String, CommunicationMessage> messageToSendL: returnList)
                                 myProducer.enqueue(messageToSendL.getKey(), messageToSendL.getValue());
+                        timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60*25, TimeUnit.SECONDS);
                         break;
 
                     case AGGREGATION_REQUEST:
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
-                        if(!messageToSend.getKey().equals("mySelf"))
-                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                        else
-                            handleAggregation(cMsg);
+                        if(messageToSend != null) {
+                            if (!messageToSend.getKey().equals("mySelf"))
+                                myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
+                            else
+                                handleAggregation(cMsg);
+                        }
                         break;
 
                     case DAILY_REPORT:
-                        messageToSend = myConsumer.handleDailyReport(cMsg);
-                        if(messageToSend != null) {
-                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                            myDb.addDailyReport(new Gson().fromJson(messageToSend.getValue().getMessageBody(), DailyReport.class));
-                        }
+                        myConsumer.handleDailyReport(cMsg);
                         break;
 
                     default:
@@ -121,24 +110,34 @@ public class AreaNode implements MessageListener {
     }
 
 
-    private void handleConnectionRefused() {
-        //CHIUDI TUTTO E TERMINA
-    }
-
     private void handleAggregation(CommunicationMessage cMsg) {
 
         Gson converter = new Gson();
+        double result;
         AggregationRequest aggregationRequested = converter.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
-        double result = myDb.getAggregation(aggregationRequested);
         CommunicationMessage aggregationResponse = new CommunicationMessage();
+        aggregationResponse.setMessageType(MessageType.AGGREGATION_RESPONSE);
 
-        if(result == -1.0){
-            result = 0;//getAggregationFromErlang();
-            myDb.saveAggregation(aggregationRequested, result);
+
+        if (aggregationRequested.getStartDay() == null) {
+            result = myDb.getDailyReport(aggregationRequested.getLastDay(), aggregationRequested.getType());
+
+        } else if (aggregationRequested.getLastDay() == null) {
+            result = myDb.getDailyReport(aggregationRequested.getStartDay(), aggregationRequested.getType());
+
+        } else {
+            result = myDb.getAggregation(aggregationRequested);
+            if(result == -1.0){
+                result = 0;//getAggregationFromErlang(
+                        //myDb.getDailyReportsInAPeriod(aggregationRequested.getStartDay(), aggregationRequested.getLastDay(), aggregationRequested.getType())
+                //);
+                myDb.saveAggregation(aggregationRequested, result);
+            }
         }
-
         aggregationRequested.setResult(result);
         aggregationResponse.setMessageBody(converter.toJson(aggregationRequested));
         myProducer.enqueue(cMsg.getSenderName(), aggregationResponse);
     }
+
+    private static void saveDailyReport(DailyReport dailyReport) { myDb.addDailyReport(dailyReport); }
 }
