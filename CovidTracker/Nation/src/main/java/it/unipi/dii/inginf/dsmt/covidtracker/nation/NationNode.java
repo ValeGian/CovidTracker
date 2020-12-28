@@ -1,11 +1,14 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.nation;
 
+import com.google.gson.Gson;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.NationConsumer;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
+import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManager;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
@@ -38,7 +41,8 @@ public class NationNode implements MessageListener {
 
     @EJB static Producer myProducer;
     @EJB static NationConsumer myConsumer;
-    @EJB public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    static KVManager myKVManager = new KVManager();
 
     private NationNode() {
     }
@@ -80,10 +84,12 @@ public class NationNode implements MessageListener {
 
                     case AGGREGATION_REQUEST:
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
-                        if(!messageToSend.getKey().equals("mySelf"))
-                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
+                        if(messageToSend.getKey().equals(myDestinationName))
+                            handleAggregation(cMsg.getSenderName(), new Gson().fromJson(cMsg.getMessageBody(), AggregationRequest.class));
+                        else if(messageToSend.getKey().equals("flood"))
+                            floodMessageToAreas(cMsg);
                         else
-                            handleAggregation(cMsg);
+                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                         break;
 
                     case DAILY_REPORT:
@@ -124,7 +130,7 @@ public class NationNode implements MessageListener {
         for(DailyReport childDailyReport: childrenDailyReports) {
             dailyReport.addAll(childDailyReport);
         }
-        //Salvare i totali giornalieri su LevelDB
+        myKVManager.addDailyReport(dailyReport);
     }
 
     void restartDailyThread() {
@@ -158,6 +164,30 @@ public class NationNode implements MessageListener {
         } else {
             System.out.println("Command not recognized!");
         }
+    }
+
+    void handleAggregation(String requester, AggregationRequest aggrReq) {
+        double result = myKVManager.getAggregation(aggrReq);
+        CommunicationMessage aggregationResponse = new CommunicationMessage();
+
+        if(result == -1.0){
+            result = 0;//getAggregationFromErlang();
+            myKVManager.saveAggregation(aggrReq, result);
+        }
+
+        aggrReq.setResult(result);
+        aggregationResponse.setMessageBody(new Gson().toJson(aggrReq));
+        myProducer.enqueue(requester, aggregationResponse);
+    }
+
+    void floodMessageToAreas(CommunicationMessage cMsg) {
+        CommunicationMessage newCMsg = new CommunicationMessage();
+        newCMsg.setMessageType(cMsg.getMessageType());
+        newCMsg.setSenderName(myDestinationName);
+        newCMsg.setMessageBody(new Gson().toJson(cMsg));
+
+        for(String childDestinationName: myChildrenDestinationNames)
+            myProducer.enqueue(childDestinationName, newCMsg);
     }
 
     //------------------------------------------------------------------------------------------------------------------
