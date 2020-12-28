@@ -1,4 +1,4 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
+package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
 public class AggregationRequest {
     private String type; //già so che Valerio proporrà un enum, per me va bene ma per ora lascio questo
