@@ -11,7 +11,7 @@ public class JavaErlServicesClientBean implements JavaErlServicesClient {
     }
 
     @Override
-    public double getAggregation(String operation, List<Integer> reports) {
+    public double computeAggregation(String operation, List<Integer> reports) {
         return 0;
     }
 }
