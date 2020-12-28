@@ -5,10 +5,8 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.NationConsumer;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
-import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManager;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
+import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
@@ -43,7 +41,8 @@ public class NationNode implements MessageListener {
     @EJB static Producer myProducer;
     @EJB static NationConsumer myConsumer;
     @EJB static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
-    static KVManager myKVManager = new KVManager();
+    @EJB static JavaErlServicesClient myErlangClient;
+    static KVManager myKVManager = new KVManagerImpl();
 
     private NationNode() {
     }
@@ -172,16 +171,14 @@ public class NationNode implements MessageListener {
         aggregationResponse.setMessageType(MessageType.AGGREGATION_RESPONSE);
         aggregationResponse.setMessageBody(new Gson().toJson(aggrReq));
 
-        if (aggrReq.getStartDay() == null) {
+        if (aggrReq.getStartDay() == aggrReq.getLastDay()) {
             result = myKVManager.getDailyReport(aggrReq.getLastDay(), aggrReq.getType());
-
-        } else if (aggrReq.getLastDay() == null) {
-            result = myKVManager.getDailyReport(aggrReq.getStartDay(), aggrReq.getType());
 
         } else {
             result = myKVManager.getAggregation(aggrReq);
             if(result == -1.0){
-                result = getAggregationFromErlang(
+                result = myErlangClient.getAggregation(
+                        aggrReq.getOperation(),
                         myKVManager.getDailyReportsInAPeriod(aggrReq.getStartDay(), aggrReq.getLastDay(), aggrReq.getType())
                 );
                 myKVManager.saveAggregation(aggrReq, result);
