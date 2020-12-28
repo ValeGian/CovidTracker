@@ -1,11 +1,11 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
 public class AggregationRequest {
-    private String type; //già so che Valerio proporrà un enum, per me va bene ma per ora lascio questo
+    private String type;
     private String destination;
     private String operation;
-    private String startDay; //formato "dd/MM/yyyy"
-    private String lastDay;  //formato "dd/MM/yyyy"
+    private String startDay; //format "dd/MM/yyyy"
+    private String lastDay;  //format "dd/MM/yyyy"
     private double result;
 
     public String getType() {

@@ -64,40 +64,39 @@ public static void main(String[] args){
         return true;
     }
 
-    public List<Integer> getDailyReportsInAPeriod(String initialDateS, String finalDateS, String type){
-        Date initialDate = null, finalDate = null;
+    public List<Integer> getDailyReportsInAPeriod(String initialDateS, String finalDateS, String type) {
+        List<Integer> searchedReports = new ArrayList<>();
+
         try {
-            initialDate = new SimpleDateFormat("dd/MM/yyyy").parse(initialDateS);
-            finalDate = new SimpleDateFormat("dd/MM/yyyy").parse(finalDateS);
-        }catch (ParseException parseException) {
-            parseException.printStackTrace();
-        }
-        String startId= String.valueOf(initialDate.getTime() - startingPoint);
-        String lastId = String.valueOf(finalDate.getTime() - startingPoint);
+            Date initialDate = new SimpleDateFormat("dd/MM/yyyy").parse(initialDateS);
+            Date finalDate = new SimpleDateFormat("dd/MM/yyyy").parse(finalDateS);
 
-        List<Integer> returnList = new ArrayList<>();
-        try (DB db = openDB(); DBIterator iterator = db.iterator()){
-            for (iterator.seek(bytes(startId)); iterator.hasNext(); iterator.next()) {
-                String key = asString(iterator.peekNext().getKey());
-                String[] keySplit = key.split(":");
+            String startId = String.valueOf(initialDate.getTime() - startingPoint);
+            String lastId = String.valueOf(finalDate.getTime() - startingPoint);
 
-                if (!keySplit[1].equals(type))
-                    continue;
+            try (DB db = openDB(); DBIterator iterator = db.iterator()) {
+                for (iterator.seek(bytes(startId)); iterator.hasNext(); iterator.next()) {
+                    String key = asString(iterator.peekNext().getKey());
+                    String[] keySplit = key.split(":");
 
-                if(Long.parseLong(keySplit[0]) > Long.parseLong(lastId))
-                    break;
+                    if (!keySplit[1].equals(type))
+                        continue;
 
-                String value = asString(iterator.peekNext().getValue());
-                returnList.add(Integer.valueOf(value));
+                    if (Long.parseLong(keySplit[0]) > Long.parseLong(lastId))
+                        break;
 
-                if(keySplit[0].equals(lastId))
-                    break;
+                    String value = asString(iterator.peekNext().getValue());
+                    searchedReports.add(Integer.valueOf(value));
+
+                    if (keySplit[0].equals(lastId))
+                        break;
+                }
             }
-        } catch (IOException e) {
-                e.printStackTrace();
-                return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
         }
-        return returnList;
+        return searchedReports;
     }
 
     /**
