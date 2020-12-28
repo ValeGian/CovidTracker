@@ -3,6 +3,7 @@ package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 public class AggregationRequest {
     private String type; //già so che Valerio proporrà un enum, per me va bene ma per ora lascio questo
     private String destination;
+    private String operation;
     private String startDay; //formato "dd/MM/yyyy"
     private String lastDay;  //formato "dd/MM/yyyy"
 
@@ -37,4 +38,17 @@ public class AggregationRequest {
     public void setLastDay(String lastDay) {
         this.lastDay = lastDay;
     }
+
+    public String getOperation() {
+        return operation;
+    }
+
+    public void setOperation(String operation) {
+        this.operation = operation;
+    }
+
+    public String toKey(){
+        return type + ":" + operation + ":" + startDay + ":" + lastDay;
+    }
+
 }
