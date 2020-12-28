@@ -1,0 +1,40 @@
+package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
+
+public class AggregationRequest {
+    private String type; //già so che Valerio proporrà un enum, per me va bene ma per ora lascio questo
+    private String destination;
+    private String startDay; //formato "dd/MM/yyyy"
+    private String lastDay;  //formato "dd/MM/yyyy"
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getDestination() {
+        return destination;
+    }
+
+    public void setDestination(String destination) {
+        this.destination = destination;
+    }
+
+    public String getStartDay() {
+        return startDay;
+    }
+
+    public void setStartDay(String startDay) {
+        this.startDay = startDay;
+    }
+
+    public String getLastDay() {
+        return lastDay;
+    }
+
+    public void setLastDay(String lastDay) {
+        this.lastDay = lastDay;
+    }
+}
