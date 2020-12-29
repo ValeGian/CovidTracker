@@ -1,12 +1,15 @@
 package it.unipi.dii.inginf.dsmt.covidtracker;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionConsumer;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
+import com.google.gson.Gson;
 
 import javax.ejb.EJB;
 import javax.jms.*;
@@ -14,6 +17,11 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 
 public class RegionNode implements MessageListener {
@@ -33,7 +41,11 @@ public class RegionNode implements MessageListener {
 
     private static RegionNode istance;
 
+    private List<DataLog> dataLogs; //logs received from the web server
+
     public static void main(String[] args) {
+        RegionNode.getInstance().sendDailyReport();
+
         if (args.length != 1)
             return;
         try {
@@ -52,6 +64,8 @@ public class RegionNode implements MessageListener {
         } catch (ParseException e) {
             e.printStackTrace();
         }
+
+
     }
 
     static void setMessageListener(final String QUEUE_NAME) {
@@ -66,13 +80,15 @@ public class RegionNode implements MessageListener {
         }
     }
 
-    private RegionNode(){}
+    private RegionNode(){
+        dataLogs = new ArrayList<DataLog>();
+    }
 
     public static RegionNode getInstance(){
         if (istance == null)
             istance = new RegionNode();
         return istance;
-    };
+    }
 
     @Override
     public void onMessage(Message msg) {
@@ -97,7 +113,7 @@ public class RegionNode implements MessageListener {
                         myConsumer.handleAggregationResponse(cMsg);
                         break;
                     case NEW_DATA:
-                        myConsumer.handleNewData(cMsg);
+                        dataLogs.add(myConsumer.handleNewData(cMsg));
                         break;
                     default:
                         break;
@@ -106,5 +122,26 @@ public class RegionNode implements MessageListener {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void sendDailyReport(){
+        DailyReport dailyReport = new DailyReport();
+
+        LocalDate localDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String currentDay = localDate.format(formatter);
+
+        for (DataLog dataLog : dataLogs){
+            if (dataLog.getDay().equals(currentDay)){
+                dailyReport.addTotalDead(dataLog.getNewDead());
+                dailyReport.addTotalNegative(dataLog.getNewNegative());
+                dailyReport.addTotalPositive(dataLog.getNewPositive());
+                dailyReport.addTotalSwab(dataLog.getNewSwab());
+            }
+        }
+        Gson gson = new Gson();
+        myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
+        myCommunicationMessage.setMessageBody(gson.toJson(dailyReport, DailyReport.class));
+        //myProducer.enqueue();
     }
 }
