@@ -43,8 +43,8 @@ public class RegionNode implements MessageListener {
 
             setMessageListener(myName);
 
-            myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
-            myProducer.enqueue(myArea, myCommunicationMessage);
+            //myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
+            //myProducer.enqueue(myArea, myCommunicationMessage);
 
             //RegionNode resta in attesa della ricezione dei messaggi da parte di RegionWeb o da altri nodi
         } catch (IOException e) {
@@ -82,16 +82,6 @@ public class RegionNode implements MessageListener {
                 Pair<String, CommunicationMessage> messageToSend;
                 switch (cMsg.getMessageType()) {
                     case NO_ACTION_REQUEST:
-                        break;
-                    case PING:
-                        messageToSend = myConsumer.handlePing(cMsg);
-                        myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                        break;
-                    case CONNECTION_ACCEPTED:
-                        myConsumer.handleConnectionAccepted(cMsg);
-                        break;
-                    case CONNECTION_REFUSED:
-                        myConsumer.handleConnectionRefused(cMsg);
                         break;
                     case REGISTRY_CLOSURE_REQUEST:
                         messageToSend = myConsumer.handleRegistryClosureRequest(cMsg);

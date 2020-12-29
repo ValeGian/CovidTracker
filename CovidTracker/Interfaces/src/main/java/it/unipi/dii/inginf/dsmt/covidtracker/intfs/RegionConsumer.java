@@ -8,12 +8,8 @@ import javax.ejb.Remote;
 @Remote
 public interface RegionConsumer {
     void initializeParameters(String name, String parent);
-    Pair<String, CommunicationMessage>
-    handlePing(CommunicationMessage cMsg);
     Pair<String, CommunicationMessage> handleRegistryClosureRequest(CommunicationMessage cMsg);
     Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg);
     void handleAggregationResponse(CommunicationMessage cMsg);
-    void handleConnectionAccepted(CommunicationMessage cMsg);
-    void handleConnectionRefused(CommunicationMessage cMsg);
     void handleNewData(CommunicationMessage cMsg);
 }

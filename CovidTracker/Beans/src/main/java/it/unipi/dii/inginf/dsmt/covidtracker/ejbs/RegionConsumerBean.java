@@ -7,6 +7,8 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionConsumer;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.KVManager;
+import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 
 import javax.ejb.Stateful;
@@ -26,15 +28,9 @@ public class RegionConsumerBean implements RegionConsumer {
     @Override
     public void initializeParameters(String myName, String parent) {
         this.myName = myName;
-        connectionState = 0;
+        connectionState = 1;
         myParent = parent;
         myCommunicationMessage.setSenderName(myName);
-    }
-
-    @Override
-    public Pair<String, CommunicationMessage> handlePing(CommunicationMessage cMsg) {
-        myCommunicationMessage.setMessageType(MessageType.PONG);
-        return new Pair<>(cMsg.getSenderName(), myCommunicationMessage);
     }
 
     @Override
@@ -63,13 +59,19 @@ public class RegionConsumerBean implements RegionConsumer {
 
         Gson gson = new Gson();
         AggregationRequest aggregationRequest = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+        AggregationRequest aggregationResult = aggregationRequest;
+        KVManager kvManager = new KVManagerImpl();
 
-        switch (aggregationRequest.getType()){
-            //eseguo l'aggregazione richiesta interfacciandomi con Mongo per ottenere i log necessari
+        aggregationResult.setResult(kvManager.getAggregation(aggregationRequest));
+        if (aggregationResult.getResult() == -1) {
+            switch (aggregationRequest.getType()){
+                //eseguo l'aggregazione richiesta interfacciandomi con Mongo per ottenere i log necessari
+            }
+            kvManager.saveAggregation(aggregationResult, aggregationResult.getResult());
         }
 
         myCommunicationMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
-        //myCommunicationMessage.setMessageBody(aggregationResult);
+        myCommunicationMessage.setMessageBody(gson.toJson(aggregationResult));
         return new Pair<>(cMsg.getSenderName(), myCommunicationMessage);
     }
 
@@ -78,19 +80,10 @@ public class RegionConsumerBean implements RegionConsumer {
         if (connectionState != 1)
             return;
 
-        String aggregationResult = cMsg.getMessageBody();
+        Gson gson = new Gson();
+        AggregationRequest aggregationRequest = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
 
         //invio dei risultati dell'aggregazione a myRegionWeb che li mostrerà a video
-    }
-
-    @Override
-    public void handleConnectionAccepted(CommunicationMessage cMsg){
-        connectionState = 1;
-    }
-
-    @Override
-    public void handleConnectionRefused(CommunicationMessage cMsg){
-        connectionState = -1;
     }
 
     @Override
