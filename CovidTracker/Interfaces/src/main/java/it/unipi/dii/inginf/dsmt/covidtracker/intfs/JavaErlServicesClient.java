@@ -8,5 +8,4 @@ import java.util.List;
 public interface JavaErlServicesClient {
 
         double computeAggregation(String operation, List<Integer> reports) throws IOException;
-
 }

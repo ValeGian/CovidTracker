@@ -4,13 +4,20 @@ import com.ericsson.otp.erlang.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.JavaErlServicesClient;
 
 import javax.ejb.Stateful;
+import javax.ejb.Stateless;
 import java.io.IOException;
 import java.util.List;
 
-@Stateful(name = "JavaErlServicesClientEJB")
+@Stateless(name = "JavaErlServicesClientEJB")
 public class JavaErlServicesClientBean implements JavaErlServicesClient {
-    private static final String serverNodeName = "services_node@localhost";
-    private static final String serverRegisteredName = "services_server";
+    private static final String avg_ServerNodeName = "avg_node@localhost";
+    private static final String avg_ServerRegisteredName = "avg_server";
+
+    private static final String sum_ServerNodeName = "sum_node@localhost";
+    private static final String sum_ServerRegisteredName = "sum_server";
+
+    private static final String standardDev_ServerNodeName = "standardDev_node@localhost";
+    private static final String standardDev_ServerRegisteredName = "standardDev_server";
     private static final String clientNodeName = "services_client_node@localhost";
     private static final String cookie = "";
     private final OtpNode clientNode;
@@ -30,21 +37,50 @@ public class JavaErlServicesClientBean implements JavaErlServicesClient {
     @Override
     public double computeAggregation(String operation, List<Integer> reports) {
         //composing the request message
-        OtpErlangInt num = new OtpErlangInt(drawnNum);
-        OtpErlangTuple reqMsg = new OtpErlangTuple(new OtpErlangObject[]{this.mbox.self(), num});
+        if(operation != null && reports.size() > 0){
+
+            if(operation.equals("sum"))
+                return contactServer(sum_ServerRegisteredName, sum_ServerNodeName, reports);
+
+            else if(operation.equals("average"))
+                return contactServer(avg_ServerRegisteredName, avg_ServerNodeName, reports);
+
+            else if(operation.equals("standard_devaition"))
+                return contactServer(standardDev_ServerRegisteredName, standardDev_ServerNodeName, reports);
+        }
+        return -1;
+    }
+
+
+    private double contactServer(String serverRegisteredName, String serverNodeName, List<Integer> reports) {
+
+        OtpErlangTuple reqMsg = new OtpErlangTuple(new OtpErlangObject[]{this.mbox.self(), javaListToErl(reports)});
 
         //sending out the request
         mbox.send(serverRegisteredName, serverNodeName, reqMsg);
-        System.out.println("Request sent by " + Thread.currentThread().toString() + " : " +
-                reqMsg.toString());
 
         //blocking receive operation
-        OtpErlangObject msg = mbox.receive();
-        //getting the message content (a number)
-        OtpErlangDouble curr_avg_erlang = (OtpErlangDouble) msg;  //it is supposed to be a tuple...
-        curr_avg = curr_avg_erlang.doubleValue();
-        System.out.println("Response received on mailbox "+mbox.getName()+" : " + msg.toString() +
-                "Content: " + Double.toString(curr_avg));
-        return 0;
+        OtpErlangObject msg = null;
+        try {
+            msg = mbox.receive();
+        } catch (OtpErlangExit otpErlangExit) {
+            otpErlangExit.printStackTrace();
+        } catch (OtpErlangDecodeException e) {
+            e.printStackTrace();
+        }
+
+        OtpErlangDouble curr_avg_erlang = (OtpErlangDouble) msg;  //it is supposed to be a double...
+        return curr_avg_erlang.doubleValue();
+
+    }
+
+
+    private OtpErlangList javaListToErl(List<Integer> reports) {
+        OtpErlangInt[] numlist = new OtpErlangInt[reports.size()];
+
+        for(int i = 0; i < reports.size(); i++){
+            numlist[i] = new OtpErlangInt(reports.get(i));
+        }
+        return new OtpErlangList(numlist);
     }
 }
