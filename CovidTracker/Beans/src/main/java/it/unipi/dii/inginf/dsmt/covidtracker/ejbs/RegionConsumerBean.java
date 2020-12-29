@@ -12,6 +12,8 @@ import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 
 import javax.ejb.Stateful;
+import java.util.ArrayList;
+import java.util.List;
 
 @Stateful(name = "RegionConsumerEJB")
 public class RegionConsumerBean implements RegionConsumer {
@@ -87,10 +89,8 @@ public class RegionConsumerBean implements RegionConsumer {
     }
 
     @Override
-    public void handleNewData(CommunicationMessage cMsg) {
+    public DataLog handleNewData(CommunicationMessage cMsg) {
         Gson gson = new Gson();
-        DataLog dataLog = gson.fromJson(cMsg.getMessageBody(), DataLog.class);
-
-        //memorizzazione del log su mongodb
+        return gson.fromJson(cMsg.getMessageBody(), DataLog.class);
     }
 }
