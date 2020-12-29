@@ -177,11 +177,16 @@ public class NationNode implements MessageListener {
         } else {
             result = myKVManager.getAggregation(aggrReq);
             if(result == -1.0){
-                result = myErlangClient.computeAggregation(
-                        aggrReq.getOperation(),
-                        myKVManager.getDailyReportsInAPeriod(aggrReq.getStartDay(), aggrReq.getLastDay(), aggrReq.getType())
-                );
-                myKVManager.saveAggregation(aggrReq, result);
+                try {
+                    result = myErlangClient.computeAggregation(
+                            aggrReq.getOperation(),
+                            myKVManager.getDailyReportsInAPeriod(aggrReq.getStartDay(), aggrReq.getLastDay(), aggrReq.getType())
+                    );
+                    myKVManager.saveAggregation(aggrReq, result);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    result = 0.0;
+                }
             }
         }
 
