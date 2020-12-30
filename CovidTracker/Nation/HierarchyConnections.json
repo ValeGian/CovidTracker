@@ -23,6 +23,7 @@
   "calabria": "jms/calabriaQueue",
   "sicilia": "jms/siciliaQueue",
   "sardegna": "jms/sardegnaQueue",
+  "regions": ["valledaosta", "piemonte", "liguria", "lombardia", "trentinoaltoadige", "veneto", "friuliveneziagiulia", "emiliaromagna", "toscana", "umbria", "marche", "lazio", "abruzzo", "molise", "campania", "puglia", "basilicata", "calabria", "sicilia", "sardegna"],
   "nationChildren": ["north", "center", "south"],
   "northParent": "nation",
   "northChildren": ["piemonte", "valledaosta", "liguria", "lombardia", "trentinoaltoadige", "veneto", "friuliveneziagiulia", "emiliaromagna"],
