@@ -3,7 +3,6 @@ package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 import com.ericsson.otp.erlang.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.JavaErlServicesClient;
 
-import javax.ejb.Stateful;
 import javax.ejb.Stateless;
 import java.io.IOException;
 import java.util.ArrayList;
