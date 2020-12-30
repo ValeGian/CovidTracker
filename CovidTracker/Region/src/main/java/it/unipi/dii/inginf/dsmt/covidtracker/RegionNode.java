@@ -39,21 +39,19 @@ public class RegionNode implements MessageListener {
     @EJB
     public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
-    private static RegionNode istance;
+    private static RegionNode istance = new RegionNode();
 
-    private List<DataLog> dataLogs; //logs received from the web server
 
     public static void main(String[] args) {
-        RegionNode.getInstance().sendDailyReport();
-
         if (args.length != 1)
             return;
+
         try {
             String myName = myHierarchyConnectionsRetriever.getMyDestinationName(args[0]);
             String myArea = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
             myConsumer.initializeParameters(myName, myArea);
 
-            setMessageListener(myName);
+            istance.setMessageListener(myName);
 
             //myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
             //myProducer.enqueue(myArea, myCommunicationMessage);
@@ -68,7 +66,7 @@ public class RegionNode implements MessageListener {
 
     }
 
-    static void setMessageListener(final String QUEUE_NAME) {
+    void setMessageListener(final String QUEUE_NAME) {
         try {
             Context ic = new InitialContext();
             Queue myQueue = (Queue) ic.lookup(QUEUE_NAME);
@@ -80,13 +78,9 @@ public class RegionNode implements MessageListener {
         }
     }
 
-    private RegionNode(){
-        dataLogs = new ArrayList<DataLog>();
-    }
+    private RegionNode(){    }
 
     public static RegionNode getInstance(){
-        if (istance == null)
-            istance = new RegionNode();
         return istance;
     }
 
@@ -113,7 +107,7 @@ public class RegionNode implements MessageListener {
                         myConsumer.handleAggregationResponse(cMsg);
                         break;
                     case NEW_DATA:
-                        dataLogs.add(myConsumer.handleNewData(cMsg));
+                        myConsumer.handleNewData(cMsg);
                         break;
                     default:
                         break;
@@ -122,26 +116,5 @@ public class RegionNode implements MessageListener {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    private void sendDailyReport(){
-        DailyReport dailyReport = new DailyReport();
-
-        LocalDate localDate = LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        String currentDay = localDate.format(formatter);
-
-        for (DataLog dataLog : dataLogs){
-            if (dataLog.getDay().equals(currentDay)){
-                dailyReport.addTotalDead(dataLog.getNewDead());
-                dailyReport.addTotalNegative(dataLog.getNewNegative());
-                dailyReport.addTotalPositive(dataLog.getNewPositive());
-                dailyReport.addTotalSwab(dataLog.getNewSwab());
-            }
-        }
-        Gson gson = new Gson();
-        myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
-        myCommunicationMessage.setMessageBody(gson.toJson(dailyReport, DailyReport.class));
-        //myProducer.enqueue();
     }
 }
