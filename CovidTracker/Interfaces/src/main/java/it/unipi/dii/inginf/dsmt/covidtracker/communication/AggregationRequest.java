@@ -6,6 +6,7 @@ public class AggregationRequest {
     private String operation;
     private String startDay; //format "dd/MM/yyyy"
     private String lastDay;  //format "dd/MM/yyyy"
+    private long timestamp;
     private double result;
 
     public String getType() {
@@ -56,4 +57,11 @@ public class AggregationRequest {
         return type + ":" + operation + ":" + startDay + ":" + lastDay;
     }
 
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
 }
