@@ -1,40 +1,23 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
 public class DataLog {
-    private int newSwab;
-    private int newPositive;
-    private int newNegative;
-    private int newDead;
+    private String type;
+    private int quantity;
 
-    public int getNewSwab() {
-        return newSwab;
+
+    public String getType() {
+        return type;
     }
 
-    public void setNewSwab(int newSwab) {
-        this.newSwab = newSwab;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public int getNewPositive() {
-        return newPositive;
+    public int getQuantity() {
+        return quantity;
     }
 
-    public void setNewPositive(int newPositive) {
-        this.newPositive = newPositive;
-    }
-
-    public int getNewNegative() {
-        return newNegative;
-    }
-
-    public void setNewNegative(int newNegative) {
-        this.newNegative = newNegative;
-    }
-
-    public int getNewDead() {
-        return newDead;
-    }
-
-    public void setNewDead(int newDead) {
-        this.newDead = newDead;
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
     }
 }

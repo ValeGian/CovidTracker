@@ -6,9 +6,11 @@ import it.unipi.dii.inginf.dsmt.covidtracker.intfs.JavaErlServicesClient;
 import javax.ejb.Stateful;
 import javax.ejb.Stateless;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
-@Stateless(name = "JavaErlServicesClientEJB")
+//@Stateless(name = "JavaErlServicesClientEJB")
 public class JavaErlServicesClientBean implements JavaErlServicesClient {
     private static final String avg_ServerNodeName = "avg_node@localhost";
     private static final String avg_ServerRegisteredName = "avg_server";
@@ -33,6 +35,25 @@ public class JavaErlServicesClientBean implements JavaErlServicesClient {
         }
         mbox = clientNode.createMbox("default_mbox");
     }
+
+    public static void main(String[] args){
+        JavaErlServicesClient serverProva = null;
+        try {
+            serverProva = new JavaErlServicesClientBean();
+
+
+            List<Integer> reportTry = new ArrayList<>();
+
+            reportTry.add(8);
+            reportTry.add(9);
+            reportTry.add(10);
+
+            System.out.println("RESULT:" + serverProva.computeAggregation("average", reportTry));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     @Override
     public double computeAggregation(String operation, List<Integer> reports) {
