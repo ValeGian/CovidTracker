@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 public class NationNode implements MessageListener {
 
     private final static NationNode instance = new NationNode();
-    private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private static ScheduledFuture<?> dailyReporterHandle = null;
     private static ScheduledFuture<?> timeoutHandle = null;
 
