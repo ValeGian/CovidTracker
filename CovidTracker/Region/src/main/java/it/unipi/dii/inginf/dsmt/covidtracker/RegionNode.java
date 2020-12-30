@@ -104,7 +104,9 @@ public class RegionNode implements MessageListener {
                             myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                         break;
                     case AGGREGATION_RESPONSE:
-                        myConsumer.handleAggregationResponse(cMsg);
+                        messageToSend = myConsumer.handleAggregationResponse(cMsg);
+                        if (messageToSend != null)
+                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                         break;
                     case NEW_DATA:
                         myConsumer.handleNewData(cMsg);

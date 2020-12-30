@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Stateful(name = "RegionConsumerEJB")
 public class RegionConsumerBean implements RegionConsumer {
@@ -30,8 +31,10 @@ public class RegionConsumerBean implements RegionConsumer {
 
     KVManager kvDB = new KVManagerImpl();
     CommunicationMessage myCommunicationMessage;
-    HashMap<String, List<DataLog>> dataLogs; //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
+    Map<String, List<DataLog>> dataLogs; //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
                                              //and the value is the list of logs received in that day
+    Map<AggregationRequest, String> aggregationToAnswer = new HashMap<AggregationRequest, String>();
+
     @Override
     public void initializeParameters(String myName, String parent) {
         this.myName = myName;
@@ -49,17 +52,22 @@ public class RegionConsumerBean implements RegionConsumer {
 
         if (registryOpened){
             registryOpened = false;
-            myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
             DailyReport dailyReport = new DailyReport();
 
             for (DataLog dataLog : dataLogs.get(getCurrentDate())){
-                dailyReport.addTotalDead(dataLog.getNewDead());
-                dailyReport.addTotalNegative(dataLog.getNewNegative());
-                dailyReport.addTotalPositive(dataLog.getNewPositive());
-                dailyReport.addTotalSwab(dataLog.getNewSwab());
+                if (dataLog.getType().equals("swab"))
+                    dailyReport.addTotalSwab(dataLog.getQuantity());
+                if (dataLog.getType().equals("positive"))
+                    dailyReport.addTotalPositive(dataLog.getQuantity());
+                if (dataLog.getType().equals("negative"))
+                    dailyReport.addTotalNegative(dataLog.getQuantity());
+                if (dataLog.getType().equals("dead"))
+                    dailyReport.addTotalDead(dataLog.getQuantity());
             }
 
             kvDB.addDailyReport(dailyReport);
+
+            myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
             myCommunicationMessage.setMessageBody(gson.toJson(dailyReport)); //immissione dei dati nel corpo del messaggio
             return new Pair<>(myParent, myCommunicationMessage);
         }
@@ -73,30 +81,54 @@ public class RegionConsumerBean implements RegionConsumer {
 
         Gson gson = new Gson();
         AggregationRequest aggregationRequest = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
-        AggregationRequest aggregationResult = aggregationRequest;
 
-        aggregationResult.setResult(kvDB.getAggregation(aggregationRequest));
-        if (aggregationResult.getResult() == -1) {
-            switch (aggregationRequest.getType()){
-                //eseguo l'aggregazione richiesta interfacciandomi con Mongo per ottenere i log necessari
+        if (aggregationRequest.getDestination().equals(myName)) {
+            double result;
+
+            result = kvDB.getAggregation(aggregationRequest);
+
+            if (result == -1) {
+                List<Integer> reportsToAggregate;
+                if (aggregationRequest.getStartDay() == null)
+                    reportsToAggregate = kvDB.getDailyReportsInAPeriod(aggregationRequest.getLastDay(), aggregationRequest.getLastDay(), aggregationRequest.getType());
+                else if (aggregationRequest.getLastDay() == null)
+                    reportsToAggregate = kvDB.getDailyReportsInAPeriod(aggregationRequest.getStartDay(), aggregationRequest.getStartDay(), aggregationRequest.getType());
+                else
+                    reportsToAggregate = kvDB.getDailyReportsInAPeriod(aggregationRequest.getStartDay(), aggregationRequest.getLastDay(), aggregationRequest.getType());
+
+                result = 0;//getAggregationFromErlang(
+                //myDb.getDailyReportsInAPeriod(aggregationRequested.getStartDay(), aggregationRequested.getLastDay(), aggregationRequested.getType())
+                //);
+                kvDB.saveAggregation(aggregationRequest, result);
             }
-            kvDB.saveAggregation(aggregationResult, aggregationResult.getResult());
-        }
 
-        myCommunicationMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
-        myCommunicationMessage.setMessageBody(gson.toJson(aggregationResult));
-        return new Pair<>(cMsg.getSenderName(), myCommunicationMessage);
+            myCommunicationMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
+            myCommunicationMessage.setMessageBody(gson.toJson(aggregationRequest));
+            return new Pair<>(cMsg.getSenderName(), myCommunicationMessage);
+        }
+        else {
+            aggregationToAnswer.put(aggregationRequest, cMsg.getSenderName());
+            myCommunicationMessage.setMessageType(MessageType.AGGREGATION_REQUEST);
+            myCommunicationMessage.setMessageBody(gson.toJson(aggregationRequest));
+            return new Pair<>(myParent, myCommunicationMessage);
+        }
     }
 
     @Override
-    public void handleAggregationResponse(CommunicationMessage cMsg){
+    public Pair<String, CommunicationMessage> handleAggregationResponse(CommunicationMessage cMsg){
         if (connectionState != 1)
-            return;
+            return null;
 
         Gson gson = new Gson();
         AggregationRequest aggregationRequest = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
-
-        //invio dei risultati dell'aggregazione a myRegionWeb che li mostrerà a video
+        myCommunicationMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
+        myCommunicationMessage.setMessageBody(gson.toJson(aggregationRequest));
+        AggregationRequest key = aggregationRequest;
+        key.setResult(-1.0);
+        String regionWeb = aggregationToAnswer.get(key);
+        if (regionWeb != null)
+            return new Pair<>(regionWeb, myCommunicationMessage);
+        return null;
     }
 
     @Override
