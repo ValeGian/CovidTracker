@@ -12,5 +12,5 @@ public interface RegionConsumer {
     Pair<String, CommunicationMessage> handleRegistryClosureRequest(CommunicationMessage cMsg);
     Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg);
     void handleAggregationResponse(CommunicationMessage cMsg);
-    DataLog handleNewData(CommunicationMessage cMsg);
+    void handleNewData(CommunicationMessage cMsg);
 }

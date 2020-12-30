@@ -12,7 +12,10 @@ import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 
 import javax.ejb.Stateful;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @Stateful(name = "RegionConsumerEJB")
@@ -25,8 +28,10 @@ public class RegionConsumerBean implements RegionConsumer {
                          //           1 if the connection is been accepted
                          //           -1 if the connection is been refused
 
+    KVManager kvDB = new KVManagerImpl();
     CommunicationMessage myCommunicationMessage;
-
+    HashMap<String, List<DataLog>> dataLogs; //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
+                                             //and the value is the list of logs received in that day
     @Override
     public void initializeParameters(String myName, String parent) {
         this.myName = myName;
@@ -45,9 +50,16 @@ public class RegionConsumerBean implements RegionConsumer {
         if (registryOpened){
             registryOpened = false;
             myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
-            //recupero di tutti i dati giornalieri
-            DailyReport dailyReport = null;
+            DailyReport dailyReport = new DailyReport();
 
+            for (DataLog dataLog : dataLogs.get(getCurrentDate())){
+                dailyReport.addTotalDead(dataLog.getNewDead());
+                dailyReport.addTotalNegative(dataLog.getNewNegative());
+                dailyReport.addTotalPositive(dataLog.getNewPositive());
+                dailyReport.addTotalSwab(dataLog.getNewSwab());
+            }
+
+            kvDB.addDailyReport(dailyReport);
             myCommunicationMessage.setMessageBody(gson.toJson(dailyReport)); //immissione dei dati nel corpo del messaggio
             return new Pair<>(myParent, myCommunicationMessage);
         }
@@ -62,14 +74,13 @@ public class RegionConsumerBean implements RegionConsumer {
         Gson gson = new Gson();
         AggregationRequest aggregationRequest = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
         AggregationRequest aggregationResult = aggregationRequest;
-        KVManager kvManager = new KVManagerImpl();
 
-        aggregationResult.setResult(kvManager.getAggregation(aggregationRequest));
+        aggregationResult.setResult(kvDB.getAggregation(aggregationRequest));
         if (aggregationResult.getResult() == -1) {
             switch (aggregationRequest.getType()){
                 //eseguo l'aggregazione richiesta interfacciandomi con Mongo per ottenere i log necessari
             }
-            kvManager.saveAggregation(aggregationResult, aggregationResult.getResult());
+            kvDB.saveAggregation(aggregationResult, aggregationResult.getResult());
         }
 
         myCommunicationMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
@@ -89,8 +100,19 @@ public class RegionConsumerBean implements RegionConsumer {
     }
 
     @Override
-    public DataLog handleNewData(CommunicationMessage cMsg) {
+    public void handleNewData(CommunicationMessage cMsg) {
+        String currentDate = getCurrentDate();
         Gson gson = new Gson();
-        return gson.fromJson(cMsg.getMessageBody(), DataLog.class);
+        DataLog newDataLog = gson.fromJson(cMsg.getMessageBody(), DataLog.class);
+        dataLogs.get(currentDate);
+        if (dataLogs.get(currentDate) == null)
+            dataLogs.put(currentDate, new ArrayList<DataLog>());
+        dataLogs.get(currentDate).add(newDataLog);
+    }
+
+    private String getCurrentDate(){
+        LocalDate localDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        return localDate.format(formatter);
     }
 }
