@@ -4,13 +4,12 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
 import javafx.util.Pair;
 
-import javax.ejb.Remote;
+import javax.ejb.Local;
 
-@Remote
+@Local
 public interface RegionConsumer {
     void initializeParameters(String name, String parent);
-    Pair<String, CommunicationMessage> handleRegistryClosureRequest(CommunicationMessage cMsg);
+    String handleRegistryClosureRequest(CommunicationMessage cMsg);
     Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg);
     Pair<String, CommunicationMessage> handleAggregationResponse(CommunicationMessage cMsg);
-    void handleNewData(CommunicationMessage cMsg);
 }
