@@ -1,5 +1,5 @@
 <component name="ArtifactManager">
-  <artifact type="exploded-war" name="RegionWeb">
+  <artifact type="exploded-war" build-on-make="true" name="RegionWeb">
     <output-path>$PROJECT_DIR$/out/artifacts/RegionWeb</output-path>
     <root id="root">
       <element id="directory" name="WEB-INF">

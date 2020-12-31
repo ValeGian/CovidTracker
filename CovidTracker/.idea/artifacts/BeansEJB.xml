@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-ejb" build-on-make="true" name="BeansEJB">
+    <output-path>$PROJECT_DIR$/out/artifacts/BeansEJB</output-path>
+    <root id="root">
+      <element id="module-output" name="Beans" />
+      <element id="javaee-facet-resources" facet="Beans/ejb/EJB" />
+      <element id="module-output" name="Interfaces" />
+    </root>
+  </artifact>
+</component>

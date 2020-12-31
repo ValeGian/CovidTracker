@@ -39,7 +39,6 @@ public class ProducerBean implements Producer {
 
         } catch (JMSException|NamingException e) {
             e.printStackTrace();
-            return;
         }
     }
 }
