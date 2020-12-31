@@ -47,7 +47,8 @@ aggregation_server_loop(Oper) ->
 start_aggregation_server(Oper) ->
 	Serv_pid = spawn(fun() -> aggregation_server_loop(Oper) end ),
 	%for process registration
-	register(aggregation_server, Serv_pid),
+	Name = list_to_atom(atom_to_list(Oper) ++ atom_to_list(server)),
+	register(Name, Serv_pid),
 	Serv_pid.
   
 sum(L) -> sum(L, 0).

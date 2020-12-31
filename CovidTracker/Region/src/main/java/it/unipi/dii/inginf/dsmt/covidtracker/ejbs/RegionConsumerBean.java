@@ -20,12 +20,8 @@ import java.util.Map;
 public class RegionConsumerBean implements RegionConsumer {
 
     String myName;
-    boolean registryOpened;
     String myParent;
-    KVManager kvDB = new KVManagerImpl();
     CommunicationMessage myCommunicationMessage;
-    Map<String, List<DataLog>> dataLogs; //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
-                                             //and the value is the list of logs received in that day
     Map<AggregationRequest, String> aggregationToAnswer = new HashMap<AggregationRequest, String>();
 
     @Override

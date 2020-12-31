@@ -47,7 +47,6 @@ public class RegionNode implements MessageListener {
 
     private Map<String, List<DataLog>> dataLogs = new HashMap<String, List<DataLog>>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
                                                                                         //and the value is the list of logs received in that day
-    private Map<AggregationRequest, String> aggregationToAnswer = new HashMap<AggregationRequest, String>();
 
     private boolean registryOpened;
 
@@ -62,11 +61,6 @@ public class RegionNode implements MessageListener {
             myConsumer.initializeParameters(myName, myArea);
 
             istance.setMessageListener(myName);
-
-            //myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
-            //myProducer.enqueue(myArea, myCommunicationMessage);
-
-            //RegionNode resta in attesa della ricezione dei messaggi da parte di RegionWeb o da altri nodi
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ParseException e) {
