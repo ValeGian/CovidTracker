@@ -1,16 +1,16 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
+import javafx.util.Pair;
 
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-
-//import javax.ejb.EJB;
+import javax.ejb.EJB;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
@@ -20,7 +20,7 @@ public class IndexServlet extends HttpServlet {
 
     private static final String regionPage = "/region/regionUI.jsp";
 
-    //@EJB static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("text/html");
@@ -33,14 +33,10 @@ public class IndexServlet extends HttpServlet {
             out.println("<label for=\"region\">Choose a region to connect:</label>");
             out.println("<select name=\"region\" id=\"region\">");
 
-            //List<Pair<String, String>> regions = myHierarchyConnectionsRetriever.getAllRegionsInfo();
-            //for(Pair<String, String> region: regions) {
-            out.println("<option value=\"prova1\">Prova1</option>");
-            out.println("<option value=\"prova2\">Prova2</option>");
-            out.println("<option value=\"prova3\">Prova3</option>");
-            out.println("<option value=\"prova4\">Prova4</option>");
-                //out.println("<option value=\"" + region.getValue() + "\">" + region.getKey().toUpperCase() + "</option>");
-            //}
+            List<Pair<String, String>> regions = myHierarchyConnectionsRetriever.getAllRegionsInfo();
+            for(Pair<String, String> region: regions) {
+                out.println("<option value=\"" + region.getValue() + "\">" + region.getKey().toUpperCase() + "</option>");
+            }
 
             out.println("</select> <br><br>");
             out.println("<input type=\"submit\" name=\"Submit\">");
