@@ -29,7 +29,26 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
 
     @Override
     public String getMyDestinationName(String nodeName) throws IOException, ParseException {
-        return (String) getJsonObject().get(nodeName);
+        JSONArray nodeDestinations = (JSONArray) getJsonObject().get(nodeName);
+        Iterator<JSONObject> iterator = nodeDestinations.iterator();
+        if (iterator.hasNext()) {
+            return iterator.next().toString();
+        }
+
+        throw new RuntimeException();
+    }
+
+    @Override
+    public String getTopicDestinationName(String nodeName) throws IOException, ParseException {
+        JSONArray nodeDestinations = (JSONArray) getJsonObject().get(nodeName);
+        Iterator<JSONObject> iterator = nodeDestinations.iterator();
+        if (iterator.hasNext()) {
+            iterator.next();
+            if(iterator.hasNext())
+                return iterator.next().toString();
+        }
+
+        throw new RuntimeException();
     }
 
     @Override
@@ -42,8 +61,8 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
     public List<String> getChildrenDestinationName(String nodeName) throws IOException, ParseException {
         List<String> childrenDestName = new ArrayList<>();
 
-        JSONArray companyList = (JSONArray) getJsonObject().get(nodeName+"Children");
-        Iterator<JSONObject> iterator = companyList.iterator();
+        JSONArray childrenList = (JSONArray) getJsonObject().get(nodeName+"Children");
+        Iterator<JSONObject> iterator = childrenList.iterator();
         while (iterator.hasNext()) {
             String childName = iterator.next().toString();
             childrenDestName.add((String) getJsonObject().get(childName));
@@ -56,8 +75,8 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
     public List<Pair<String, String>> getAllRegionsInfo() throws IOException, ParseException {
         List<Pair<String, String>> regionsInfo = new ArrayList<>();
 
-        JSONArray companyList = (JSONArray) getJsonObject().get("regions");
-        Iterator<JSONObject> iterator = companyList.iterator();
+        JSONArray regionsList = (JSONArray) getJsonObject().get("regions");
+        Iterator<JSONObject> iterator = regionsList.iterator();
         while (iterator.hasNext()) {
             String regionName = iterator.next().toString();
             String regionDestName = getMyDestinationName(regionName);
