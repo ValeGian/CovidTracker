@@ -12,6 +12,8 @@ public interface HierarchyConnectionsRetriever {
 
     String getMyDestinationName(final String nodeName) throws IOException, ParseException;
 
+    String getTopicDestinationName(final String nodeName) throws IOException, ParseException;
+
     String getParentDestinationName(final String nodeName) throws IOException, ParseException ;
 
     List<String> getChildrenDestinationName(final String nodeName) throws IOException, ParseException ;
