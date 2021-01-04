@@ -1,13 +1,11 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -51,8 +49,8 @@ public class RegionServlet extends HttpServlet {
             out.println("<h2>Request an aggregation</h2>");
             out.println("<form action=\"" + req.getContextPath() + "/region/regionUI.jsp\" method=\"GET\">");
 
-            out.println("<label for=\"log_type\">Choose the type to aggregate:</label>");
-            out.println("<select name=\"log_type\" id=\"log_type\">");
+            out.println("<label for=\"log_aggr_type\">Choose the type to aggregate:</label>");
+            out.println("<select name=\"log_aggr_type\" id=\"log_aggr_type\">");
             out.println("<option value=\"swab\">Swab</option>");
             out.println("<option value=\"positive\">Positive</option>");
             out.println("<option value=\"negative\">Negative</option>");
@@ -90,6 +88,6 @@ public class RegionServlet extends HttpServlet {
             System.out.println("webclient servlet test failed");
             throw new ServletException(ex);
         }
-
     }
+
 }
