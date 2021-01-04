@@ -1,7 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
-import javafx.util.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -72,16 +71,15 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
     }
 
     @Override
-    public List<Pair<String, String>> getAllRegionsInfo() throws IOException, ParseException {
-        List<Pair<String, String>> regionsInfo = new ArrayList<>();
+    public List<String> getAllRegionsName() throws IOException, ParseException {
+        List<String> regionsName = new ArrayList<>();
 
         JSONArray regionsList = (JSONArray) getJsonObject().get("regions");
         Iterator<JSONObject> iterator = regionsList.iterator();
         while (iterator.hasNext()) {
             String regionName = iterator.next().toString();
-            String regionDestName = getMyDestinationName(regionName);
-            regionsInfo.add(new Pair<>(regionName, regionDestName));
+            regionsName.add(regionName);
         }
-        return regionsInfo;
+        return regionsName;
     }
 }

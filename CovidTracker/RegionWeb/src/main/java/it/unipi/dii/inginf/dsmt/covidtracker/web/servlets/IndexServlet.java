@@ -1,7 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
-import javafx.util.Pair;
 
 import javax.ejb.EJB;
 import javax.servlet.RequestDispatcher;
@@ -33,9 +32,9 @@ public class IndexServlet extends HttpServlet {
             out.println("<label for=\"region\">Choose a region to connect:</label>");
             out.println("<select name=\"region\" id=\"region\">");
 
-            List<Pair<String, String>> regions = myHierarchyConnectionsRetriever.getAllRegionsInfo();
-            for(Pair<String, String> region: regions) {
-                out.println("<option value=\"" + region.getValue() + "\">" + region.getKey().toUpperCase() + "</option>");
+            List<String> regionNames = myHierarchyConnectionsRetriever.getAllRegionsName();
+            for(String regionName: regionNames) {
+                out.println("<option value=\"" + regionName + "\">" + regionName.toUpperCase() + "</option>");
             }
 
             out.println("</select> <br><br>");
