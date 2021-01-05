@@ -1,9 +1,23 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
+import com.google.gson.Gson;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionWebConsumer;
+import it.unipi.dii.inginf.dsmt.covidtracker.web.servlets.ejbs.RegionWebConsumerBean;
 import org.json.simple.parser.ParseException;
 
 import javax.ejb.EJB;
+import javax.jms.Queue;
+import javax.jms.QueueConnectionFactory;
+import javax.jms.Topic;
+import javax.jms.TopicConnectionFactory;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -19,6 +33,13 @@ public class RegionServlet extends HttpServlet {
     private String regionQueueName;
     private String regionTopicName;
 
+    final static String TC_FACTORY_NAME = "jms/__defaultConnectionFactory";
+
+    @EJB
+    public static Producer myProducer;
+
+    @EJB
+    static RegionWebConsumer myConsumer;
     @EJB
     static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
@@ -29,6 +50,8 @@ public class RegionServlet extends HttpServlet {
             try {
                 regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
                 regionTopicName = myHierarchyConnectionsRetriever.getTopicDestinationName(region);
+
+                setMessageListener(regionTopicName);
 
                 resp.setContentType("text/html");
                 PrintWriter out = resp.getWriter();
@@ -95,6 +118,15 @@ public class RegionServlet extends HttpServlet {
                             + "<br>"+ logAggrType + "<br>");
                 }
 
+
+                //stampa dei risultati delle aggregazioni
+                out.println("<h2>Aggregation results:</h2>");
+                out.println("<p>" + myConsumer.getAggregationResponses() +"</p>");
+
+
+                //pulsante per refreshare pagina e stampare nuove aggregazioni
+                out.println("<button onClick=\"window.location.reload();\">Update Results</button>");
+
                 out.println("</BODY> </HTML> ");
 
             } catch (Exception ex) {
@@ -105,4 +137,28 @@ public class RegionServlet extends HttpServlet {
         }
     }
 
+    protected void setMessageListener(final String TOPIC_NAME) {
+        try {
+            Context ic = new InitialContext();
+            Topic myTopic = (Topic) ic.lookup(TOPIC_NAME);
+            TopicConnectionFactory tcf = (TopicConnectionFactory) ic.lookup(TC_FACTORY_NAME);
+            tcf.createContext().createConsumer(myTopic).setMessageListener(myConsumer);
+        } catch (NamingException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    protected void sendAggregationRequest(String queue, AggregationRequest aggregationRequest){
+        Gson gson = new Gson();
+        CommunicationMessage cMsg = new CommunicationMessage();
+        cMsg.setSenderName("RegionWeb");
+        cMsg.setMessageBody(gson.toJson(aggregationRequest));
+        cMsg.setMessageType(MessageType.AGGREGATION_REQUEST);
+
+        //salvo la richiesta tra le richieste effettuate nel bean
+        myConsumer.addAggregation(aggregationRequest);
+
+        myProducer.enqueue(queue, cMsg);
+    }
 }
