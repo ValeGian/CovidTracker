@@ -18,6 +18,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -47,7 +48,6 @@ public class RegionNode implements MessageListener {
 
     private Map<String, List<DataLog>> dataLogs = new HashMap<String, List<DataLog>>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
                                                                                         //and the value is the list of logs received in that day
-    private Map<AggregationRequest, String> aggregationToAnswer = new HashMap<AggregationRequest, String>();
 
     private boolean registryOpened;
 
@@ -58,15 +58,9 @@ public class RegionNode implements MessageListener {
         try {
             String myName = myHierarchyConnectionsRetriever.getMyDestinationName(args[0]);
             String myArea = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
-
             myConsumer.initializeParameters(myName, myArea);
 
             istance.setMessageListener(myName);
-
-            //myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
-            //myProducer.enqueue(myArea, myCommunicationMessage);
-
-            //RegionNode resta in attesa della ricezione dei messaggi da parte di RegionWeb o da altri nodi
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ParseException e) {
@@ -79,6 +73,7 @@ public class RegionNode implements MessageListener {
     void setMessageListener(final String QUEUE_NAME) {
         try {
             Context ic = new InitialContext();
+            
             Queue myQueue = (Queue) ic.lookup(QUEUE_NAME);
             QueueConnectionFactory qcf = (QueueConnectionFactory) ic.lookup(QC_FACTORY_NAME);
             qcf.createContext().createConsumer(myQueue).setMessageListener(RegionNode.getInstance());
@@ -159,7 +154,7 @@ public class RegionNode implements MessageListener {
             kvDB.addDailyReport(dailyReport);
 
             myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
-            myCommunicationMessage.setMessageBody(gson.toJson(dailyReport)); //immissione dei dati nel corpo del messaggio
+            myCommunicationMessage.setMessageBody(gson.toJson(dailyReport));
             myProducer.enqueue(destination, myCommunicationMessage);
         }
     }
