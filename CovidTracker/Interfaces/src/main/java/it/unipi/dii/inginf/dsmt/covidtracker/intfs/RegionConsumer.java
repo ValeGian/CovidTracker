@@ -11,5 +11,4 @@ public interface RegionConsumer {
     void initializeParameters(String name, String parent);
     String handleRegistryClosureRequest(CommunicationMessage cMsg);
     Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg);
-    Pair<String, CommunicationMessage> handleAggregationResponse(CommunicationMessage cMsg);
 }
