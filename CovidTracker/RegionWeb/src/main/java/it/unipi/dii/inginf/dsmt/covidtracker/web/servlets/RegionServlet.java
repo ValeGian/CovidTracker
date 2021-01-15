@@ -40,6 +40,8 @@ public class RegionServlet extends HttpServlet {
             try {
                 regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
 
+                setMessageListener(regionTopicName);
+
                 resp.setContentType("text/html");
                 PrintWriter out = resp.getWriter();
 
@@ -160,6 +162,15 @@ public class RegionServlet extends HttpServlet {
                         System.out.println("> impossible to send aggregation request");
                     }
                 }
+
+
+                //stampa dei risultati delle aggregazioni
+                out.println("<h2>Aggregation results:</h2>");
+                out.println("<p>" + myConsumer.getAggregationResponses() +"</p>");
+
+
+                //pulsante per refreshare pagina e stampare nuove aggregazioni
+                out.println("<button onClick=\"window.location.reload();\">Update Results</button>");
 
                 out.println("</BODY> </HTML> ");
 

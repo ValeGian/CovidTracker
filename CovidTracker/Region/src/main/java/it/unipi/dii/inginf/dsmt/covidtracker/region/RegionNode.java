@@ -18,6 +18,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -25,6 +26,8 @@ import java.util.*;
 
 public class RegionNode implements MessageListener {
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
+
+    final static String TC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     @EJB
     public static Producer myProducer;
@@ -34,6 +37,8 @@ public class RegionNode implements MessageListener {
 
     @EJB
     public static RegionConsumer myConsumer;
+
+
 
     @EJB
     public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
@@ -47,7 +52,9 @@ public class RegionNode implements MessageListener {
 
     private Map<String, List<DataLog>> dataLogs = new HashMap<String, List<DataLog>>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
                                                                                         //and the value is the list of logs received in that day
-    private Map<AggregationRequest, String> aggregationToAnswer = new HashMap<AggregationRequest, String>();
+    private TopicPublisher myPublisher;
+
+    private JMSContext myJMSContext;
 
     private boolean registryOpened;
 
@@ -61,12 +68,9 @@ public class RegionNode implements MessageListener {
 
             myConsumer.initializeParameters(myName, myArea);
 
+            istance.setTopicPublisher(myHierarchyConnectionsRetriever.getTopicDestinationName(myName));
+
             istance.setMessageListener(myName);
-
-            //myCommunicationMessage.setMessageType(MessageType.CONNECTION_REQUEST);
-            //myProducer.enqueue(myArea, myCommunicationMessage);
-
-            //RegionNode resta in attesa della ricezione dei messaggi da parte di RegionWeb o da altri nodi
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ParseException e) {
@@ -74,6 +78,26 @@ public class RegionNode implements MessageListener {
         }
 
 
+    }
+
+    void setTopicPublisher(final String TOPIC_NAME) {
+        try {
+            Context ic = new InitialContext();
+            Topic myTopic = (Topic) ic.lookup(TOPIC_NAME);
+
+            TopicConnectionFactory topicConnFactory = (TopicConnectionFactory) ic.lookup(TC_FACTORY_NAME);
+            myJMSContext = topicConnFactory.createContext();
+
+            TopicConnection topicConn = topicConnFactory.createTopicConnection();
+
+            TopicSession topicSession = topicConn.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+
+            myPublisher = topicSession.createPublisher(myTopic);
+            myPublisher.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     void setMessageListener(final String QUEUE_NAME) {
@@ -88,7 +112,9 @@ public class RegionNode implements MessageListener {
         }
     }
 
-    private RegionNode(){    }
+    private RegionNode(){
+
+    }
 
     public static RegionNode getInstance(){
         return istance;
@@ -120,10 +146,7 @@ public class RegionNode implements MessageListener {
                         }
                         break;
                     case AGGREGATION_RESPONSE:
-                        messageToSend = myConsumer.handleAggregationResponse(cMsg);
-                        if (messageToSend != null)
-                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                        break;
+                        handleAggregationResponse(cMsg);
                     case NEW_DATA:
                         saveDataLog(gson.fromJson(cMsg.getMessageBody(), DataLog.class));
                         break;
@@ -159,7 +182,7 @@ public class RegionNode implements MessageListener {
             kvDB.addDailyReport(dailyReport);
 
             myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
-            myCommunicationMessage.setMessageBody(gson.toJson(dailyReport)); //immissione dei dati nel corpo del messaggio
+            myCommunicationMessage.setMessageBody(gson.toJson(dailyReport));
             myProducer.enqueue(destination, myCommunicationMessage);
         }
     }
@@ -192,8 +215,22 @@ public class RegionNode implements MessageListener {
         aggregationRequest.setResult(result);
         myCommunicationMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
         myCommunicationMessage.setMessageBody(gson.toJson(aggregationRequest));
-        myProducer.enqueue(cMsg.getSenderName(), myCommunicationMessage);
+        //controllo chi ha richiesto l'aggregazione
+        //se è stata richiesta da un nodo gliela spedisco nella sua coda
+        if (!cMsg.getSenderName().equals("RegionWeb"))
+            myProducer.enqueue(cMsg.getSenderName(), myCommunicationMessage);
+        else
+            publishMessage(cMsg);
+    }
 
+    private void handleAggregationResponse(CommunicationMessage cMsg){
+        Gson gson = new Gson();
+        AggregationRequest aggregationResponse = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+
+        //salvo l'aggregazione nel database
+        kvDB.saveAggregation(aggregationResponse, aggregationResponse.getResult());
+        //inoltro il messaggio di risposta a tutti gli WebServer
+        publishMessage(cMsg);
     }
 
     private void saveDataLog(DataLog dataLog){
@@ -210,5 +247,16 @@ public class RegionNode implements MessageListener {
         LocalDate localDate = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         return localDate.format(formatter);
+    }
+
+    private void publishMessage(CommunicationMessage cMsg){
+        try {
+            ObjectMessage myMsg = myJMSContext.createObjectMessage();
+            myMsg.setObject(cMsg);
+
+            myPublisher.publish(myMsg);
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
     }
 }
