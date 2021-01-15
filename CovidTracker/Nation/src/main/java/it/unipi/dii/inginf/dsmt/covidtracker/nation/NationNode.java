@@ -2,6 +2,7 @@ package it.unipi.dii.inginf.dsmt.covidtracker.nation;
 
 import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationResponse;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
@@ -38,11 +39,12 @@ public class NationNode implements MessageListener {
     private static String myDestinationName;
     private static List<String> myChildrenDestinationNames;
 
-    @EJB static Producer myProducer;
-    @EJB static NationConsumer myConsumer;
-    @EJB static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
-    @EJB static JavaErlServicesClient myErlangClient;
+    @EJB private Producer myProducer;
+    @EJB private NationConsumerHandler myConsumer;
+    @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB private JavaErlServicesClient myErlangClient;
     static KVManager myKVManager = new KVManagerImpl();
+    private final Gson gson = new Gson();
 
     private NationNode() {
     }
@@ -51,11 +53,11 @@ public class NationNode implements MessageListener {
 
     public static void main(String[] args) throws IOException, ParseException {
 
-        myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
-        myChildrenDestinationNames = myHierarchyConnectionsRetriever.getChildrenDestinationName(myName);
+        myDestinationName = instance.myHierarchyConnectionsRetriever.getMyDestinationName(myName);
+        myChildrenDestinationNames = instance.myHierarchyConnectionsRetriever.getChildrenDestinationName(myName);
 
         instance.setMessageListener(myDestinationName);
-        myConsumer.initializeParameters(myDestinationName, myChildrenDestinationNames);
+        instance.myConsumer.initializeParameters(myDestinationName, myChildrenDestinationNames);
 
         instance.restartDailyThread();
 
@@ -72,17 +74,13 @@ public class NationNode implements MessageListener {
         if (msg instanceof ObjectMessage) {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
-                Pair<String, CommunicationMessage> messageToSend;
                 switch (cMsg.getMessageType()) {
-                    case NO_ACTION_REQUEST:
-                        break;
-
                     case AGGREGATION_REQUEST:
-                        messageToSend = myConsumer.handleAggregationRequest(cMsg);
+                        Pair<String, CommunicationMessage> messageToSend = myConsumer.handleAggregationRequest(cMsg);
                         if(messageToSend.getKey().equals(myDestinationName))
-                            handleAggregation(cMsg.getSenderName(), new Gson().fromJson(cMsg.getMessageBody(), AggregationRequest.class));
+                            handleAggregation((ObjectMessage) msg);
                         else if(messageToSend.getKey().equals("flood"))
-                            floodMessageToAreas(cMsg);
+                            floodMessageToAreas((ObjectMessage) msg);
                         else
                             myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                         break;
@@ -164,44 +162,60 @@ public class NationNode implements MessageListener {
         }
     }
 
-    void handleAggregation(String requester, AggregationRequest aggrReq) {
-        double result = 0.0;
+    void handleAggregation(ObjectMessage msg) {
+        try {
+            CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
+            AggregationRequest request = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+            double result = 0.0;
 
-        CommunicationMessage aggregationResponse = new CommunicationMessage();
-        aggregationResponse.setMessageType(MessageType.AGGREGATION_RESPONSE);
-        aggregationResponse.setMessageBody(new Gson().toJson(aggrReq));
+            CommunicationMessage outMsg = new CommunicationMessage();
+            outMsg.setMessageType(MessageType.AGGREGATION_RESPONSE);
+            outMsg.setSenderName(myDestinationName);
+            AggregationResponse response = new AggregationResponse(request);
 
-        if (aggrReq.getStartDay() == aggrReq.getLastDay()) {
-            result = myKVManager.getDailyReport(aggrReq.getLastDay(), aggrReq.getType());
+            if (request.getStartDay() == request.getLastDay()) {
+                result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
 
-        } else {
-            result = myKVManager.getAggregation(aggrReq);
-            if(result == -1.0){
-                try {
-                    result = myErlangClient.computeAggregation(
-                            aggrReq.getOperation(),
-                            myKVManager.getDailyReportsInAPeriod(aggrReq.getStartDay(), aggrReq.getLastDay(), aggrReq.getType())
-                    );
-                    myKVManager.saveAggregation(aggrReq, result);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    result = 0.0;
+            } else {
+                result = myKVManager.getAggregation(request);
+                if (result == -1.0) {
+                    try {
+                        result = myErlangClient.computeAggregation(
+                                request.getOperation(),
+                                myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
+                        );
+                        myKVManager.saveAggregation(request, result);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        result = 0.0;
+                    }
                 }
             }
-        }
 
-        aggrReq.setResult(result);
-        myProducer.enqueue(requester, aggregationResponse);
+            response.setResult(result);
+            outMsg.setMessageBody(gson.toJson(response));
+            msg.setObject(outMsg);
+            myProducer.enqueue(cMsg.getSenderName(), msg);
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
     }
 
-    void floodMessageToAreas(CommunicationMessage cMsg) {
-        CommunicationMessage newCMsg = new CommunicationMessage();
-        newCMsg.setMessageType(cMsg.getMessageType());
-        newCMsg.setSenderName(myDestinationName);
-        newCMsg.setMessageBody(new Gson().toJson(cMsg));
-
-        for(String childDestinationName: myChildrenDestinationNames)
-            myProducer.enqueue(childDestinationName, newCMsg);
+    void floodMessageToAreas(ObjectMessage outMsg) {
+        try {
+            CommunicationMessage oldMsg = (CommunicationMessage) ((ObjectMessage) outMsg).getObject();
+            // wrap the old message in a new message with the nation as sender
+            CommunicationMessage newCMsg = new CommunicationMessage();
+            newCMsg.setMessageType(oldMsg.getMessageType());
+            newCMsg.setSenderName(myDestinationName);
+            newCMsg.setMessageBody(gson.toJson(oldMsg));
+            outMsg.setObject(newCMsg);
+            // flood the message to all the areas
+            for (String childDestinationName : myChildrenDestinationNames)
+                myProducer.enqueue(childDestinationName, outMsg);
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
     }
 
     //------------------------------------------------------------------------------------------------------------------

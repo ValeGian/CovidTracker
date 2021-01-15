@@ -1,6 +1,8 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
-public class DailyReport {
+import java.io.Serializable;
+
+public class DailyReport implements Serializable {
     private int totalSwab;
     private int totalPositive;
     private int totalNegative;

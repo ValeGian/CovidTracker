@@ -1,13 +1,28 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
-public class AggregationRequest {
+import java.io.Serializable;
+
+public class AggregationRequest implements Serializable {
     private String type;
     private String destination;
     private String operation;
     private String startDay; //format "dd/MM/yyyy"
     private String lastDay;  //format "dd/MM/yyyy"
-    private long timestamp;
-    private double result;
+
+    public AggregationRequest() {}
+
+    public AggregationRequest(String type,
+                              String destination,
+                              String operation,
+                              String startDay,
+                              String lastDay) {
+
+        this.type = type;
+        this.destination = destination;
+        this.operation = operation;
+        this.startDay = startDay;
+        this.lastDay = lastDay;
+    }
 
     public String getType() {
         return type;
@@ -49,19 +64,7 @@ public class AggregationRequest {
         this.operation = operation;
     }
 
-    public double getResult() { return result; }
-
-    public void setResult(double result) { this.result = result; }
-
     public String toKey(){
         return type + ":" + operation + ":" + startDay + ":" + lastDay;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
     }
 }

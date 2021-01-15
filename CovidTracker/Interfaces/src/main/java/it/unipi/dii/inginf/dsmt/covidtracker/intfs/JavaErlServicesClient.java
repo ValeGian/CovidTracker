@@ -6,6 +6,5 @@ import java.util.List;
 
 @Remote
 public interface JavaErlServicesClient {
-
         double computeAggregation(String operation, List<Integer> reports) throws IOException;
 }

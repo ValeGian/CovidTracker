@@ -18,6 +18,7 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
 
     static final String FILE_PATH = "HierarchyConnections.json";
     static final JSONParser jsonParser = new JSONParser();
+    static final String NATION_NAME = "nation";
 
     public HierarchyConnectionsRetrieverBean() {
     }
@@ -28,42 +29,21 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
 
     @Override
     public String getMyDestinationName(String nodeName) throws IOException, ParseException {
-        JSONArray nodeDestinations = (JSONArray) getJsonObject().get(nodeName);
-        Iterator<JSONObject> iterator = nodeDestinations.iterator();
-        if (iterator.hasNext()) {
-            return iterator.next().toString();
-        }
-
-        throw new RuntimeException();
+        return getJsonObject().get(nodeName).toString();
     }
 
     @Override
-    public String getTopicDestinationName(String nodeName) throws IOException, ParseException {
-        JSONArray nodeDestinations = (JSONArray) getJsonObject().get(nodeName);
-        Iterator<JSONObject> iterator = nodeDestinations.iterator();
-        if (iterator.hasNext()) {
-            iterator.next();
-            if(iterator.hasNext())
-                return iterator.next().toString();
-        }
-
-        throw new RuntimeException();
+    public String getParentDestinationName(String childName) throws IOException, ParseException {
+        String parentName = (String) getJsonObject().get(childName+"Parent");
+        return getJsonObject().get(parentName).toString();
     }
 
     @Override
-    public String getParentDestinationName(String nodeName) throws IOException, ParseException {
-        String parentName = (String) getJsonObject().get(nodeName+"Parent");
-        return (String) getJsonObject().get(parentName);
-    }
-
-    @Override
-    public List<String> getChildrenDestinationName(String nodeName) throws IOException, ParseException {
+    public List<String> getChildrenDestinationName(String parentName) throws IOException, ParseException {
         List<String> childrenDestName = new ArrayList<>();
 
-        JSONArray childrenList = (JSONArray) getJsonObject().get(nodeName+"Children");
-        Iterator<JSONObject> iterator = childrenList.iterator();
-        while (iterator.hasNext()) {
-            String childName = iterator.next().toString();
+        List<String> childrenList = getChildrenNames(parentName);
+        for (String childName: childrenList) {
             childrenDestName.add((String) getJsonObject().get(childName));
         }
 
@@ -75,11 +55,32 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
         List<String> regionsName = new ArrayList<>();
 
         JSONArray regionsList = (JSONArray) getJsonObject().get("regions");
-        Iterator<JSONObject> iterator = regionsList.iterator();
-        while (iterator.hasNext()) {
-            String regionName = iterator.next().toString();
+        for (int i = 0; i < regionsList.size(); i++) {
+            String regionName = regionsList.get(i).toString();
             regionsName.add(regionName);
         }
         return regionsName;
+    }
+
+    @Override
+    public List<String> getAllNames() throws IOException, ParseException {
+        List<String> names = new ArrayList<>();
+
+        names.add(NATION_NAME);
+        names.addAll(getChildrenNames(NATION_NAME));
+        names.addAll(getAllRegionsName());
+
+        return names;
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    private List<String> getChildrenNames(String parentName) throws IOException, ParseException {
+        List<String> childrenNames = new ArrayList<>();
+        JSONArray childrenList = (JSONArray) getJsonObject().get(parentName+"Children");
+        for (int i = 0; i < childrenList.size(); i++) {
+            childrenNames.add(childrenList.get(i).toString());
+        }
+        return childrenNames;
     }
 }

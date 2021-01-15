@@ -30,5 +30,6 @@
     <orderEntry type="library" name="Maven: org.iq80.leveldb:leveldb:0.12" level="project" />
     <orderEntry type="library" name="Maven: org.iq80.leveldb:leveldb-api:0.12" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:21.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: javax.jms:javax.jms-api:2.0.1" level="project" />
   </component>
 </module>
