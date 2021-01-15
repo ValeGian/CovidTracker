@@ -1,6 +1,8 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.communication;
 
-public class DataLog {
+import java.io.Serializable;
+
+public class DataLog implements Serializable {
     private String type;
     private int quantity;
 

@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="ejb-jar" name="BeansEJB archive">
-    <output-path>$PROJECT_DIR$/out/artifacts/BeansEJB_archive</output-path>
-    <root id="archive" name="BeansEJB archive.jar">
-      <element id="artifact" artifact-name="BeansEJB" />
-    </root>
-  </artifact>
-</component>

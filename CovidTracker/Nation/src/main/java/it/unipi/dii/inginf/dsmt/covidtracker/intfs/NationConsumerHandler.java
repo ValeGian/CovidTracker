@@ -8,7 +8,7 @@ import javax.ejb.Local;
 import java.util.List;
 
 @Local
-public interface NationConsumer {
+public interface NationConsumerHandler {
 
     void initializeParameters(String name, List<String> childrenAreas);
 

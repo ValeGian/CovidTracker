@@ -2,21 +2,21 @@ package it.unipi.dii.inginf.dsmt.covidtracker.intfs;
 
 import org.json.simple.parser.ParseException;
 
-import javax.ejb.Remote;
+import javax.ejb.Local;
 import java.io.IOException;
 import java.util.List;
 
-@Remote
+@Local
 public interface HierarchyConnectionsRetriever {
 
     String getMyDestinationName(final String nodeName) throws IOException, ParseException;
 
-    String getTopicDestinationName(final String nodeName) throws IOException, ParseException;
+    String getParentDestinationName(final String childName) throws IOException, ParseException ;
 
-    String getParentDestinationName(final String nodeName) throws IOException, ParseException ;
-
-    List<String> getChildrenDestinationName(final String nodeName) throws IOException, ParseException ;
+    List<String> getChildrenDestinationName(final String parentName) throws IOException, ParseException ;
 
     List<String> getAllRegionsName() throws IOException, ParseException;
+
+    List<String> getAllNames() throws IOException, ParseException;
 
 }

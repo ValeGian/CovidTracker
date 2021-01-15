@@ -31,13 +31,25 @@ public class ProducerBean implements Producer {
     @Override
     public void enqueue(final String consumerName, final CommunicationMessage cMsg) {
         try {
-            ObjectMessage myMsg = myJMSContext.createObjectMessage();
-            myMsg.setObject(cMsg);
+            ObjectMessage outMsg = myJMSContext.createObjectMessage();
+            outMsg.setObject(cMsg);
+            enqueue(consumerName, outMsg);
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
 
-            Queue consumerQueue= (Queue)ic.lookup(consumerName);
-            myJMSContext.createProducer().send(consumerQueue,myMsg);
+    }
 
-        } catch (JMSException|NamingException e) {
+    @Override
+    public void enqueue(final String consumerName, final Message outMsg) {
+        try {
+            if(consumerName.equals("tmp")) {
+                myJMSContext.createProducer().send(outMsg.getJMSReplyTo(), outMsg);
+            } else {
+                Queue consumerQueue = (Queue) ic.lookup(consumerName);
+                myJMSContext.createProducer().send(consumerQueue, outMsg);
+            }
+        } catch (NamingException | JMSException e) {
             e.printStackTrace();
         }
     }

@@ -19,7 +19,7 @@ public class IndexServlet extends HttpServlet {
 
     private static final String regionPage = "/region/regionUI.jsp";
 
-    @EJB static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("text/html");
@@ -57,13 +57,5 @@ public class IndexServlet extends HttpServlet {
             System.out.println("webclient servlet test failed");
             throw new ServletException(ex);
         }
-    }
-
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
-    }
-
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
     }
 }

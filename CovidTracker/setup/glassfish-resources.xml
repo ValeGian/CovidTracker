@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE resources PUBLIC "-//GlassFish.org//DTD GlassFish Application Server 3.1 Resource Definitions//EN" "http://glassfish.org/dtds/glassfish-resources_1_5.dtd">
+<resources>
+    <admin-object-resource enabled="true" jndi-name="jms/nationQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="nationQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/northQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="northQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/centerQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="centerQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/southQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="southQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/valleAostaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="valleAostaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/piemonteQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="piemonteQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/liguriaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="liguriaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/lombardiaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="lombardiaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/trentinoAltoAdigeQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="trentinoAltoAdigeQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/venetoQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="venetoQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/friuliVeneziaGiuliaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="friuliVeneziaGiuliaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/emiliaRomagnaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="emiliaRomagnaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/toscanaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="toscanaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/umbriaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="umbriaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/marcheQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="marcheQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/lazioQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="lazioQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/abruzzoQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="abruzzoQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/moliseQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="moliseQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/campaniaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="campaniaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/pugliaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="pugliaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/basilicataQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="basilicataQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/calabriaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="calabriaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/siciliaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="siciliaQueue"/>
+    </admin-object-resource>
+    <admin-object-resource enabled="true" jndi-name="jms/sardegnaQueue" object-type="user" res-adapter="jmsra" res-type="javax.jms.Queue">
+        <description/>
+        <property name="Name" value="sardegnaQueue"/>
+    </admin-object-resource>
+</resources>

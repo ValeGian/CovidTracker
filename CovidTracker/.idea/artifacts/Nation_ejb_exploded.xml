@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-ejb" name="Nation:ejb exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/Nation_ejb_exploded</output-path>
+    <root id="root">
+      <element id="module-output" name="Nation" />
+      <element id="javaee-facet-resources" facet="Nation/ejb/EJB" />
+      <element id="module-output" name="Interfaces" />
+    </root>
+  </artifact>
+</component>
