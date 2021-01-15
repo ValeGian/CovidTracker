@@ -9,6 +9,8 @@ public class AggregationRequest implements Serializable {
     private String startDay; //format "dd/MM/yyyy"
     private String lastDay;  //format "dd/MM/yyyy"
 
+    public AggregationRequest() {}
+
     public AggregationRequest(String type,
                               String destination,
                               String operation,
@@ -60,5 +62,9 @@ public class AggregationRequest implements Serializable {
 
     public void setOperation(String operation) {
         this.operation = operation;
+    }
+
+    public String toKey(){
+        return type + ":" + operation + ":" + startDay + ":" + lastDay;
     }
 }

@@ -31,7 +31,7 @@ public class RegionServlet extends HttpServlet {
     private String regionQueueName;
 
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
-    @EJB private SynchRequester myRequester;
+    //@EJB private SynchRequester myRequester;
 
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(true);
@@ -103,9 +103,10 @@ public class RegionServlet extends HttpServlet {
                 out.println("</form> <br>");
 
                 // list of Aggregation Responses received
-                Recorder recorderPerClient = lookupRecorder(session);
+                /*Recorder recorderPerClient = lookupRecorder(session);
                 out.println("<FONT size=+1 color=red> Message(s) back from StatefulSessionBean (per client): </FONT>"
                         + "<br>" + recorderPerClient.readResponses().replace("\n", "<br>") + "<br>");
+                 */
 
                 // Servlet Logic
                 if (req.getParameter("Submit_Log") != null) {
@@ -146,14 +147,14 @@ public class RegionServlet extends HttpServlet {
                                 endDate
                         );
                         // send the aggregation request and receive the response
-                        AggregationResponse response = myRequester.requestAndReceiveAggregation(regionQueueName, request);
+                        /*AggregationResponse response = myRequester.requestAndReceiveAggregation(regionQueueName, request);
                         if(response == null) {
                             out.println("<FONT size=+1 color=red>RESPONSE = NULL</FONT>");
                         } else {
                             recorderPerClient.addResponse(response);
                             RequestDispatcher disp = getServletContext().getRequestDispatcher(regionPage);
                             if (disp != null) disp.forward(req, resp);
-                        }
+                        }*/
                     } catch(Exception ex) {
                         ex.printStackTrace();
                         System.out.println("> impossible to send aggregation request");
