@@ -2,10 +2,15 @@ package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationResponse;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
+import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Recorder;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.SynchRequester;
 
+import com.google.gson.Gson;
 import javax.ejb.EJB;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -25,13 +30,14 @@ import java.util.logging.Logger;
 
 @WebServlet(name = "RegionServlet", urlPatterns={"/region/*"})
 public class RegionServlet extends HttpServlet {
-    private static final String RECORDER_JNDI = "java:global/lab_08_ejbs/RecorderEJB";
+    private static final String RECORDER_JNDI = "java:global/Beans_ejb_exploded/RecorderEJB";
     private static final String regionPage = "/region/regionUI.jsp";
 
     private String regionQueueName;
 
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
-    //@EJB private SynchRequester myRequester;
+    @EJB private SynchRequester myRequester;
+    @EJB private Producer myProducer;
 
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(true);
@@ -105,12 +111,11 @@ public class RegionServlet extends HttpServlet {
                 out.println("</form> <br>");
 
                 // list of Aggregation Responses received
-                /*Recorder recorderPerClient = lookupRecorder(session);
-                out.println("<FONT size=+1 color=red> Message(s) back from StatefulSessionBean (per client): </FONT>"
+                Recorder recorderPerClient = lookupRecorder(session);
+                out.println("<FONT size=+1 color=red> Aggregation responses: </FONT>"
                         + "<br>" + recorderPerClient.readResponses().replace("\n", "<br>") + "<br>");
-                 */
 
-                // Servlet Logic
+                // execute Servlet logic
                 if (req.getParameter("Submit_Log") != null) {
                     try {
                         String logType = req.getParameter("log_type");
@@ -120,13 +125,24 @@ public class RegionServlet extends HttpServlet {
                                 + "<br>" + logType + "<br>"
                                 + "<br>" + logQuantity + "<br>"
                         );
+
+                        // create the log and send it to the connected region
+                        DataLog log = new DataLog();
+                        log.setType(logType);
+                        log.setQuantity(logQuantity);
+
+                        CommunicationMessage outMsg = new CommunicationMessage();
+                        outMsg.setMessageType(MessageType.NEW_DATA);
+                        outMsg.setSenderName("webapp");
+                        outMsg.setMessageBody(new Gson().toJson(log));
+
+                        myProducer.enqueue(regionQueueName, outMsg);
+
                     } catch(Exception ex) {
                         ex.printStackTrace();
                         System.out.println("> impossible to send log");
                     }
-                }
-
-                if (req.getParameter("Submit_aggrReq") != null) {
+                } else if (req.getParameter("Submit_aggrReq") != null) {
                     try {
                         String logType = req.getParameter("log_aggr_type");
                         String aggrDest = req.getParameter("aggr_dest");
@@ -149,14 +165,14 @@ public class RegionServlet extends HttpServlet {
                                 endDate
                         );
                         // send the aggregation request and receive the response
-                        /*AggregationResponse response = myRequester.requestAndReceiveAggregation(regionQueueName, request);
+                        AggregationResponse response = myRequester.requestAndReceiveAggregation(regionQueueName, request);
                         if(response == null) {
-                            out.println("<FONT size=+1 color=red>RESPONSE = NULL</FONT>");
+                            out.println("<FONT size=+1 color=red>Not been able to deliver the aggregation request</FONT>");
                         } else {
                             recorderPerClient.addResponse(response);
                             RequestDispatcher disp = getServletContext().getRequestDispatcher(regionPage);
                             if (disp != null) disp.forward(req, resp);
-                        }*/
+                        }
                     } catch(Exception ex) {
                         ex.printStackTrace();
                         System.out.println("> impossible to send aggregation request");

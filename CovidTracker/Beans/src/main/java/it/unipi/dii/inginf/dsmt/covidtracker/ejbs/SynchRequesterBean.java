@@ -44,6 +44,9 @@ public class SynchRequesterBean implements SynchRequester {
         outMsg.setMessageBody(gson.toJson(requestMsg, AggregationRequest.class));
 
         Message inMsg = requestAndReceive(consumerName, outMsg);
+        if(inMsg == null)
+            return null;
+
         CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) inMsg).getObject();
         return gson.fromJson(cMsg.getMessageBody(), AggregationResponse.class);
     }
