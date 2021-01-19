@@ -1,9 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.region;
 
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
@@ -18,7 +15,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
-import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -27,50 +23,39 @@ import java.util.*;
 public class RegionNode implements MessageListener {
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
-    final static String TC_FACTORY_NAME = "jms/__defaultConnectionFactory";
-
-    @EJB
-    public static Producer myProducer;
-
-    @EJB
-    public static CommunicationMessage myCommunicationMessage;
-
-    @EJB
-    public static RegionConsumer myConsumer;
-
-
-
-    @EJB
-    public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB private Producer myProducer;
+    @EJB private CommunicationMessage myCommunicationMessage;
+    @EJB private RegionConsumer myConsumer;
+    @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB private JavaErlServicesClient myErlangClient;
 
     private static RegionNode istance = new RegionNode();
 
-    private static KVManager kvDB = new KVManagerImpl();
+    private static KVManager myKVManager = new KVManagerImpl();
 
-    @EJB
-    private static JavaErlServicesClient myErlangClient;;
 
     private Map<String, List<DataLog>> dataLogs = new HashMap<String, List<DataLog>>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
                                                                                         //and the value is the list of logs received in that day
-    private TopicPublisher myPublisher;
-
-    private JMSContext myJMSContext;
 
     private boolean registryOpened;
+
+    private String myDestinationName;
+
+    private String myAreaDestinationName;
+
+    private final Gson gson = new Gson();
 
     public static void main(String[] args) {
         if (args.length != 1)
             return;
 
         try {
-            String myName = myHierarchyConnectionsRetriever.getMyDestinationName(args[0]);
-            String myArea = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
+            istance.myDestinationName = istance.myHierarchyConnectionsRetriever.getMyDestinationName(args[0]);
+            istance.myAreaDestinationName = istance.myHierarchyConnectionsRetriever.getParentDestinationName(args[0]);
 
-            myConsumer.initializeParameters(myName, myArea);
+            istance.myConsumer.initializeParameters(istance.myDestinationName, istance.myAreaDestinationName);
 
-            istance.setTopicPublisher(myHierarchyConnectionsRetriever.getTopicDestinationName(myName));
-
-            istance.setMessageListener(myName);
+            istance.setMessageListener(istance.myDestinationName);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ParseException e) {
@@ -78,26 +63,6 @@ public class RegionNode implements MessageListener {
         }
 
 
-    }
-
-    void setTopicPublisher(final String TOPIC_NAME) {
-        try {
-            Context ic = new InitialContext();
-            Topic myTopic = (Topic) ic.lookup(TOPIC_NAME);
-
-            TopicConnectionFactory topicConnFactory = (TopicConnectionFactory) ic.lookup(TC_FACTORY_NAME);
-            myJMSContext = topicConnFactory.createContext();
-
-            TopicConnection topicConn = topicConnFactory.createTopicConnection();
-
-            TopicSession topicSession = topicConn.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-
-            myPublisher = topicSession.createPublisher(myTopic);
-            myPublisher.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        }
     }
 
     void setMessageListener(final String QUEUE_NAME) {
@@ -132,21 +97,15 @@ public class RegionNode implements MessageListener {
                     case NO_ACTION_REQUEST:
                         break;
                     case REGISTRY_CLOSURE_REQUEST:
-                        String destination = myConsumer.handleRegistryClosureRequest(cMsg);
-                        if (destination != null)
-                            closeRegister(destination);
+                        closeRegister(myAreaDestinationName);
                         break;
                     case AGGREGATION_REQUEST:
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
-                        if (messageToSend != null) {
-                            if (messageToSend.getValue().getMessageType() == MessageType.AGGREGATION_REQUEST)
-                                myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                            else
-                                handleAggregation(messageToSend.getValue());
-                        }
+                        if (messageToSend.getValue().getMessageType() == MessageType.AGGREGATION_REQUEST)
+                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
+                        else
+                            handleAggregation((ObjectMessage) messageToSend.getValue());
                         break;
-                    case AGGREGATION_RESPONSE:
-                        handleAggregationResponse(cMsg);
                     case NEW_DATA:
                         saveDataLog(gson.fromJson(cMsg.getMessageBody(), DataLog.class));
                         break;
@@ -162,8 +121,6 @@ public class RegionNode implements MessageListener {
     // --------------------------------------------------------
 
     private void closeRegister(String destination){
-        Gson gson = new Gson();
-
         if (registryOpened){
             registryOpened = false;
             DailyReport dailyReport = new DailyReport();
@@ -179,7 +136,7 @@ public class RegionNode implements MessageListener {
                     dailyReport.addTotalDead(dataLog.getQuantity());
             }
 
-            kvDB.addDailyReport(dailyReport);
+            myKVManager.addDailyReport(dailyReport);
 
             myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
             myCommunicationMessage.setMessageBody(gson.toJson(dailyReport));
@@ -187,50 +144,43 @@ public class RegionNode implements MessageListener {
         }
     }
 
-    private void handleAggregation(CommunicationMessage cMsg){
-        Gson gson = new Gson();
-        AggregationRequest aggregationRequest = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+    private void handleAggregation(ObjectMessage msg){
+        try {
+            CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
+            AggregationRequest request = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+            double result = 0.0;
 
-        double result;
+            CommunicationMessage outMsg = new CommunicationMessage();
+            outMsg.setMessageType(MessageType.AGGREGATION_RESPONSE);
+            outMsg.setSenderName(myDestinationName);
+            AggregationResponse response = new AggregationResponse(request);
 
-        result = kvDB.getAggregation(aggregationRequest);
+            if (request.getStartDay() == request.getLastDay()) {
+                result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
 
-        if (result == -1) {
-            List<Integer> reportsToAggregate;
-            if (aggregationRequest.getStartDay() == null)
-                reportsToAggregate = kvDB.getDailyReportsInAPeriod(aggregationRequest.getLastDay(), aggregationRequest.getLastDay(), aggregationRequest.getType());
-            else if (aggregationRequest.getLastDay() == null)
-                reportsToAggregate = kvDB.getDailyReportsInAPeriod(aggregationRequest.getStartDay(), aggregationRequest.getStartDay(), aggregationRequest.getType());
-            else
-                reportsToAggregate = kvDB.getDailyReportsInAPeriod(aggregationRequest.getStartDay(), aggregationRequest.getLastDay(), aggregationRequest.getType());
-
-            try {
-                result = myErlangClient.computeAggregation(aggregationRequest.getOperation(), reportsToAggregate);
-                kvDB.saveAggregation(aggregationRequest, result);
-            } catch (IOException e) {
-                e.printStackTrace();
+            } else {
+                result = myKVManager.getAggregation(request);
+                if (result == -1.0) {
+                    try {
+                        result = myErlangClient.computeAggregation(
+                                request.getOperation(),
+                                myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
+                        );
+                        myKVManager.saveAggregation(request, result);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        result = 0.0;
+                    }
+                }
             }
+
+            response.setResult(result);
+            outMsg.setMessageBody(gson.toJson(response));
+            msg.setObject(outMsg);
+            myProducer.enqueue(cMsg.getSenderName(), msg);
+        } catch (JMSException e) {
+            e.printStackTrace();
         }
-
-        aggregationRequest.setResult(result);
-        myCommunicationMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
-        myCommunicationMessage.setMessageBody(gson.toJson(aggregationRequest));
-        //controllo chi ha richiesto l'aggregazione
-        //se è stata richiesta da un nodo gliela spedisco nella sua coda
-        if (!cMsg.getSenderName().equals("RegionWeb"))
-            myProducer.enqueue(cMsg.getSenderName(), myCommunicationMessage);
-        else
-            publishMessage(cMsg);
-    }
-
-    private void handleAggregationResponse(CommunicationMessage cMsg){
-        Gson gson = new Gson();
-        AggregationRequest aggregationResponse = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
-
-        //salvo l'aggregazione nel database
-        kvDB.saveAggregation(aggregationResponse, aggregationResponse.getResult());
-        //inoltro il messaggio di risposta a tutti gli WebServer
-        publishMessage(cMsg);
     }
 
     private void saveDataLog(DataLog dataLog){
@@ -247,16 +197,5 @@ public class RegionNode implements MessageListener {
         LocalDate localDate = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         return localDate.format(formatter);
-    }
-
-    private void publishMessage(CommunicationMessage cMsg){
-        try {
-            ObjectMessage myMsg = myJMSContext.createObjectMessage();
-            myMsg.setObject(cMsg);
-
-            myPublisher.publish(myMsg);
-        } catch (JMSException e) {
-            e.printStackTrace();
-        }
     }
 }

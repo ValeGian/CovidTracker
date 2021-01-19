@@ -27,14 +27,7 @@ public class RegionConsumerBean implements RegionConsumer {
     public void initializeParameters(String myName, String parent) {
         this.myName = myName;
         myParent = parent;
-    }
-
-    @Override
-    public String handleRegistryClosureRequest(CommunicationMessage cMsg) {
-        if (myParent.equals(cMsg.getSenderName()))
-            return myParent;
-
-        return null;
+        myCommunicationMessage.setSenderName(myName);
     }
 
     @Override
