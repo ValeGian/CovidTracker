@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-//@Stateless(name = "JavaErlServicesClientEJB")
+@Stateless(name = "JavaErlServicesClientEJB")
 public class JavaErlServicesClientBean implements JavaErlServicesClient {
     private static final String avg_ServerNodeName = "avg_node@localhost";
     private static final String avg_ServerRegisteredName = "avg_server";
