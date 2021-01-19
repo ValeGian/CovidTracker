@@ -25,8 +25,6 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @WebServlet(name = "RegionServlet", urlPatterns={"/region/*"})
 public class RegionServlet extends HttpServlet {
@@ -45,8 +43,6 @@ public class RegionServlet extends HttpServlet {
         if(region != null) {
             try {
                 regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
-
-                setMessageListener(regionTopicName);
 
                 resp.setContentType("text/html");
                 PrintWriter out = resp.getWriter();
@@ -179,15 +175,6 @@ public class RegionServlet extends HttpServlet {
                     }
                 }
 
-
-                //stampa dei risultati delle aggregazioni
-                out.println("<h2>Aggregation results:</h2>");
-                out.println("<p>" + myConsumer.getAggregationResponses() +"</p>");
-
-
-                //pulsante per refreshare pagina e stampare nuove aggregazioni
-                out.println("<button onClick=\"window.location.reload();\">Update Results</button>");
-
                 out.println("</BODY> </HTML> ");
 
             } catch (Exception ex) {
@@ -211,7 +198,7 @@ public class RegionServlet extends HttpServlet {
                 rRef = (Recorder) c.lookup(RECORDER_JNDI);
 
             } catch (NamingException ne) {
-                Logger.getLogger(getClass().getName()).log(Level.SEVERE, "exception caught", ne);
+                System.out.println(ne.getMessage());
                 throw new RuntimeException(ne);
             }
 
