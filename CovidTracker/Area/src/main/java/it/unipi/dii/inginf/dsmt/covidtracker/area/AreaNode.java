@@ -2,6 +2,7 @@ package it.unipi.dii.inginf.dsmt.covidtracker.area;
 
 import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationResponse;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
@@ -29,23 +30,28 @@ public class AreaNode implements MessageListener {
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
     private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static ScheduledFuture<?> timeoutHandle = null;
+    private final Gson gson = new Gson();
 
-    private static final Runnable timeout = new Runnable() { public void run() { saveDailyReport(myConsumer.getDailyReport()); }};
+    private static final Runnable timeout = () -> saveDailyReport(instance.myConsumer.getDailyReport());
 
-    @EJB public static Producer myProducer;
+    private String myDestinationName;
 
-    @EJB public static AreaConsumer myConsumer;
+    @EJB private Producer myProducer;
 
-    @EJB public static HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB private AreaConsumer myConsumer;
+    @EJB private JavaErlServicesClient myErlangClient;
+
+    @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
     public static void main(String[] args) {
         if (args.length == 1) {
             String name = args[0];
             try {
-                String myJNDIQueue = myHierarchyConnectionsRetriever.getMyDestinationName(name);
-                instance.setMessageListener(myJNDIQueue);
+                instance.myDestinationName = instance.myHierarchyConnectionsRetriever.getMyDestinationName(name);
+                instance.setMessageListener(instance.myDestinationName);
+                instance.myDestinationName = instance.myHierarchyConnectionsRetriever.getMyDestinationName(args[0]);
 
-                myConsumer.initializeParameters(myJNDIQueue, myHierarchyConnectionsRetriever.getChildrenDestinationName(name), myHierarchyConnectionsRetriever.getParentDestinationName(name));
+                instance.myConsumer.initializeParameters(instance.myDestinationName, instance.myHierarchyConnectionsRetriever.getChildrenDestinationName(name), instance.myHierarchyConnectionsRetriever.getParentDestinationName(name));
             }catch (IOException | ParseException parseException){
                 throw new RuntimeException(parseException);
             }
@@ -91,7 +97,7 @@ public class AreaNode implements MessageListener {
                             if (!messageToSend.getKey().equals("mySelf"))
                                 myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                             else
-                                handleAggregation(cMsg);
+                                handleAggregation((ObjectMessage) msg);
                         }
                         break;
 
@@ -110,33 +116,43 @@ public class AreaNode implements MessageListener {
     }
 
 
-    private void handleAggregation(CommunicationMessage cMsg) {
+    private void handleAggregation(ObjectMessage msg) {
+        try {
+            CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
+            AggregationRequest request = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+            double result = 0.0;
 
-        Gson converter = new Gson();
-        double result;
-        AggregationRequest aggregationRequested = converter.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
-        CommunicationMessage aggregationResponse = new CommunicationMessage();
-        aggregationResponse.setMessageType(MessageType.AGGREGATION_RESPONSE);
+            CommunicationMessage outMsg = new CommunicationMessage();
+            outMsg.setMessageType(MessageType.AGGREGATION_RESPONSE);
+            outMsg.setSenderName(myDestinationName);
+            AggregationResponse response = new AggregationResponse(request);
 
+            if (request.getStartDay() == request.getLastDay()) {
+                result = myDb.getDailyReport(request.getLastDay(), request.getType());
 
-        if (aggregationRequested.getStartDay() == null) {
-            result = myDb.getDailyReport(aggregationRequested.getLastDay(), aggregationRequested.getType());
-
-        } else if (aggregationRequested.getLastDay() == null) {
-            result = myDb.getDailyReport(aggregationRequested.getStartDay(), aggregationRequested.getType());
-
-        } else {
-            result = myDb.getAggregation(aggregationRequested);
-            if(result == -1.0){
-                result = 0;//getAggregationFromErlang(
-                        //myDb.getDailyReportsInAPeriod(aggregationRequested.getStartDay(), aggregationRequested.getLastDay(), aggregationRequested.getType())
-                //);
-                myDb.saveAggregation(aggregationRequested, result);
+            } else {
+                result = myDb.getAggregation(request);
+                if (result == -1.0) {
+                    try {
+                        result = myErlangClient.computeAggregation(
+                                request.getOperation(),
+                                myDb.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
+                        );
+                        myDb.saveAggregation(request, result);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        result = 0.0;
+                    }
+                }
             }
+
+            response.setResult(result);
+            outMsg.setMessageBody(gson.toJson(response));
+            msg.setObject(outMsg);
+            myProducer.enqueue(cMsg.getSenderName(), msg);
+        } catch (JMSException e) {
+            e.printStackTrace();
         }
-        aggregationRequested.setResult(result);
-        aggregationResponse.setMessageBody(converter.toJson(aggregationRequested));
-        myProducer.enqueue(cMsg.getSenderName(), aggregationResponse);
     }
 
     private static void saveDailyReport(DailyReport dailyReport) { myDb.addDailyReport(dailyReport); }
