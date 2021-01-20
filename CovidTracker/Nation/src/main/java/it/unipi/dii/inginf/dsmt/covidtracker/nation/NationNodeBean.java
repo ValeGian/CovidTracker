@@ -12,29 +12,30 @@ import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
 import javax.ejb.EJB;
+import javax.annotation.PostConstruct;
+import javax.ejb.Stateful;
 import javax.jms.*;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
+import javax.naming.*;
 import java.io.IOException;
+import java.lang.IllegalStateException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class NationNode implements MessageListener {
+@Stateful(name = "NationNodeEJB")
+public class NationNodeBean implements MessageListener, NationNode {
 
-    private final static NationNode instance = new NationNode();
     private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private static ScheduledFuture<?> dailyReporterHandle = null;
     private static ScheduledFuture<?> timeoutHandle = null;
 
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
+
     private final static String myName = "nation";
     private static String myDestinationName;
     private static List<String> myChildrenDestinationNames;
@@ -43,29 +44,24 @@ public class NationNode implements MessageListener {
     @EJB private NationConsumerHandler myConsumer;
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
     @EJB private JavaErlServicesClient myErlangClient;
-    static KVManager myKVManager = new KVManagerImpl();
+    private final KVManager myKVManager = new KVManagerImpl();
     private final Gson gson = new Gson();
 
-    private NationNode() {
+    public NationNodeBean() {
     }
 
-    public static NationNode getInstance() { return instance; }
+    @PostConstruct
+    public void init() {
+        try {
+            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
+            myChildrenDestinationNames = myHierarchyConnectionsRetriever.getChildrenDestinationName(myName);
 
-    public static void main(String[] args) throws IOException, ParseException {
+            setMessageListener(myDestinationName);
+            myConsumer.initializeParameters(myDestinationName, myChildrenDestinationNames);
 
-        myDestinationName = instance.myHierarchyConnectionsRetriever.getMyDestinationName(myName);
-        myChildrenDestinationNames = instance.myHierarchyConnectionsRetriever.getChildrenDestinationName(myName);
-
-        instance.setMessageListener(myDestinationName);
-        instance.myConsumer.initializeParameters(myDestinationName, myChildrenDestinationNames);
-
-        instance.restartDailyThread();
-
-        System.out.println("Type REGISTRY_CLOSURE to close the daily report: ");
-        Scanner sc = new Scanner(System.in);
-        while(true) {
-            System.out.print("> ");
-            instance.handleUserInput(sc.next());
+            restartDailyThread();
+        } catch (IOException | ParseException ex) {
+            throw new IllegalStateException(ex);
         }
     }
 
@@ -102,12 +98,12 @@ public class NationNode implements MessageListener {
     //------------------------------------------------------------------------------------------------------------------
 
 
-    void setMessageListener(final String QUEUE_NAME) {
+    private void setMessageListener(final String QUEUE_NAME) {
         try{
             Context ic = new InitialContext();
             Queue myQueue= (Queue)ic.lookup(QUEUE_NAME);
             QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(instance);
+            qcf.createContext().createConsumer(myQueue).setMessageListener(this);
         }
         catch (final NamingException e) {
             System.err.println(e.getMessage());
@@ -115,11 +111,11 @@ public class NationNode implements MessageListener {
         }
     }
 
-    void saveDailyReport(DailyReport dailyReport) {
+    private void saveDailyReport(DailyReport dailyReport) {
         myKVManager.addDailyReport(dailyReport);
     }
 
-    void restartDailyThread() {
+    public void restartDailyThread() {
         if(dailyReporterHandle != null)
             dailyReporterHandle.cancel(true);
         if(timeoutHandle != null)
@@ -135,7 +131,7 @@ public class NationNode implements MessageListener {
         final Runnable dailyReporter = new Runnable() {
             @Override
             public void run() {
-                instance.sendRegistryClosureRequests();
+                sendRegistryClosureRequests();
                 timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60*30, TimeUnit.SECONDS);
             }
         };
@@ -144,7 +140,7 @@ public class NationNode implements MessageListener {
 
     }
 
-    void sendRegistryClosureRequests() {
+    private void sendRegistryClosureRequests() {
         CommunicationMessage regClosureMsg = new CommunicationMessage();
         regClosureMsg.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
         regClosureMsg.setSenderName(myDestinationName);
@@ -162,7 +158,7 @@ public class NationNode implements MessageListener {
         }
     }
 
-    void handleAggregation(ObjectMessage msg) {
+    private void handleAggregation(ObjectMessage msg) {
         try {
             CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
             AggregationRequest request = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
@@ -201,7 +197,7 @@ public class NationNode implements MessageListener {
         }
     }
 
-    void floodMessageToAreas(ObjectMessage outMsg) {
+    private void floodMessageToAreas(ObjectMessage outMsg) {
         try {
             CommunicationMessage oldMsg = (CommunicationMessage) ((ObjectMessage) outMsg).getObject();
             // wrap the old message in a new message with the nation as sender
@@ -220,7 +216,7 @@ public class NationNode implements MessageListener {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    long secondsUntilMidnight() {
+    private long secondsUntilMidnight() {
         ZoneId zone = ZoneId.of("Europe/Rome");
         ZonedDateTime now = ZonedDateTime.now(zone);
         ZonedDateTime midnight = now.toLocalDate().plusDays(1).atStartOfDay(zone);
