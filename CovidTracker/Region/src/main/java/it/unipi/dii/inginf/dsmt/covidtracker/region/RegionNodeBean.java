@@ -9,6 +9,7 @@ import org.json.simple.parser.ParseException;
 import com.google.gson.Gson;
 
 import javax.ejb.EJB;
+import javax.ejb.Stateless;
 import javax.jms.*;
 import javax.jms.Queue;
 import javax.naming.Context;
@@ -19,8 +20,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-
-public class RegionNode implements MessageListener {
+@Stateless(name = "RegionNodeEJB")
+public class RegionNodeBean implements MessageListener, RegionNode {
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     private CommunicationMessage myCommunicationMessage;
@@ -30,40 +31,30 @@ public class RegionNode implements MessageListener {
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
     @EJB private JavaErlServicesClient myErlangClient;
 
-    private static RegionNode istance = new RegionNode();
-
-    private static KVManager myKVManager = new KVManagerImpl();
+    private static KVManager myKVManager;
 
 
     private Map<String, List<DataLog>> dataLogs = new HashMap<String, List<DataLog>>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
                                                                                         //and the value is the list of logs received in that day
-
     private boolean registryOpened;
-
     private String myDestinationName;
-
     private String myAreaDestinationName;
-
     private final Gson gson = new Gson();
 
-    public static void main(String[] args) {
-        if (args.length != 1)
-            return;
-
+    public void initialize(String myName) {
         try {
-            istance.myDestinationName = istance.myHierarchyConnectionsRetriever.getMyDestinationName(args[0]);
-            istance.myAreaDestinationName = istance.myHierarchyConnectionsRetriever.getParentDestinationName(args[0]);
+            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
+            myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
+            myKVManager = new KVManagerImpl(myName);
 
-            istance.myConsumer.initializeParameters(istance.myDestinationName, istance.myAreaDestinationName);
+            myConsumer.initializeParameters(myDestinationName, myAreaDestinationName);
 
-            istance.setMessageListener(istance.myDestinationName);
+            setMessageListener(myDestinationName);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ParseException e) {
             e.printStackTrace();
         }
-
-
     }
 
     void setMessageListener(final String QUEUE_NAME) {
@@ -71,20 +62,15 @@ public class RegionNode implements MessageListener {
             Context ic = new InitialContext();
             Queue myQueue = (Queue) ic.lookup(QUEUE_NAME);
             QueueConnectionFactory qcf = (QueueConnectionFactory) ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(RegionNode.getInstance());
+            qcf.createContext().createConsumer(myQueue).setMessageListener(this);
         } catch (NamingException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private RegionNode(){
+    public RegionNodeBean(){ }
 
-    }
-
-    public static RegionNode getInstance(){
-        return istance;
-    }
 
     @Override
     public void onMessage(Message msg) {
@@ -139,9 +125,10 @@ public class RegionNode implements MessageListener {
 
             myKVManager.addDailyReport(dailyReport);
 
-            myCommunicationMessage.setMessageType(MessageType.DAILY_REPORT);
-            myCommunicationMessage.setMessageBody(gson.toJson(dailyReport));
-            myProducer.enqueue(destination, myCommunicationMessage);
+            CommunicationMessage communicationMessage = new CommunicationMessage();
+            communicationMessage.setMessageType(MessageType.DAILY_REPORT);
+            communicationMessage.setMessageBody(gson.toJson(dailyReport));
+            myProducer.enqueue(destination, communicationMessage);
         }
     }
 

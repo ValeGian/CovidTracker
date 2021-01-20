@@ -12,6 +12,7 @@ import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
 import javax.ejb.EJB;
+import javax.ejb.Stateless;
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -23,57 +24,49 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class AreaNode implements MessageListener {
+@Stateless(name = "AreaNodeEJB")
+public class AreaNodeBean implements MessageListener, AreaNode {
 
-    private final static AreaNode instance = new AreaNode();
-    private static final KVManagerImpl myDb = new KVManagerImpl();
+    private KVManagerImpl myDb;
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
-    private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static ScheduledFuture<?> timeoutHandle = null;
     private final Gson gson = new Gson();
-
-    private static final Runnable timeout = () -> saveDailyReport(instance.myConsumer.getDailyReport());
-
     private String myDestinationName;
-
     @EJB private Producer myProducer;
-
     @EJB private AreaConsumer myConsumer;
     @EJB private JavaErlServicesClient myErlangClient;
-
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    private final Runnable timeout = () -> saveDailyReport(myConsumer.getDailyReport());
 
-    public static void main(String[] args) {
-        if (args.length == 1) {
-            String name = args[0];
-            try {
-                instance.myDestinationName = instance.myHierarchyConnectionsRetriever.getMyDestinationName(name);
-                instance.setMessageListener(instance.myDestinationName);
-                instance.myDestinationName = instance.myHierarchyConnectionsRetriever.getMyDestinationName(args[0]);
-
-                instance.myConsumer.initializeParameters(instance.myDestinationName, instance.myHierarchyConnectionsRetriever.getChildrenDestinationName(name), instance.myHierarchyConnectionsRetriever.getParentDestinationName(name));
-            }catch (IOException | ParseException parseException){
-                throw new RuntimeException(parseException);
-            }
+    public void initialize(String myName){
+        try {
+            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
+            setMessageListener(myDestinationName);
+            myDb = new KVManagerImpl(myName);
+            myConsumer.initializeParameters(myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName(myName), myHierarchyConnectionsRetriever.getParentDestinationName(myName));
+        }catch (IOException | ParseException parseException){
+            throw new RuntimeException(parseException);
         }
     }
 
-    private AreaNode(){}
 
-    public static AreaNode getInstance() { return instance; }
+    public AreaNodeBean(){}
+
 
     void setMessageListener(final String QUEUE_NAME) {
         try{
             Context ic = new InitialContext();
             Queue myQueue = (Queue)ic.lookup(QUEUE_NAME);
             QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(instance);
+            qcf.createContext().createConsumer(myQueue).setMessageListener(this);
         }
         catch (final NamingException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
+
 
     @Override
     public void onMessage(Message msg) {
@@ -107,7 +100,6 @@ public class AreaNode implements MessageListener {
 
                     default:
                         break;
-
                 }
             } catch (final JMSException e) {
                 throw new RuntimeException(e);
@@ -155,5 +147,5 @@ public class AreaNode implements MessageListener {
         }
     }
 
-    private static void saveDailyReport(DailyReport dailyReport) { myDb.addDailyReport(dailyReport); }
+    private void saveDailyReport(DailyReport dailyReport) { myDb.addDailyReport(dailyReport); }
 }

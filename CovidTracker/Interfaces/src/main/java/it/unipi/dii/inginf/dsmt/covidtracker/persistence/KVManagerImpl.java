@@ -19,24 +19,28 @@ import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 
 public class KVManagerImpl implements KVManager {
     private static final long startingPoint = (long) 1000 * 60 * 60 * 24 * 365 * 50;
+    private static String fileName;
 
-public static void main(String[] args){
-    KVManagerImpl kv = new KVManagerImpl();
-    AggregationRequest a = new AggregationRequest();
-    a.setStartDay("28/12/2020");
-    a.setLastDay("31/12/2020");
-    kv.saveAggregation(a, 4);
-    Double d = kv.getAggregation(a);
-    System.out.println(kv.getAggregation(a));
+    public KVManagerImpl(String myName) {
+        fileName = myName + "KVDb";
+    }
 
-}
+    public static void main(String[] args){
+        KVManagerImpl kv = new KVManagerImpl("prova");
+        AggregationRequest a = new AggregationRequest();
+        a.setStartDay("28/12/2020");
+        a.setLastDay("31/12/2020");
+        kv.saveAggregation(a, 4);
+        Double d = kv.getAggregation(a);
+        System.out.println(kv.getAggregation(a));
+    }
 
     private static DB openDB() {
         DB db = null;
         Options options = new Options();
         options.createIfMissing(true);
         try {
-            db = factory.open(new File("myKV_DB"), options);
+            db = factory.open(new File(fileName), options);
         } catch (IOException ioe) {
             System.err.println("Connection Failed!\n");
         } finally {
