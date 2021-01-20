@@ -23,8 +23,9 @@ import java.util.*;
 public class RegionNode implements MessageListener {
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
+    private CommunicationMessage myCommunicationMessage;
+
     @EJB private Producer myProducer;
-    @EJB private CommunicationMessage myCommunicationMessage;
     @EJB private RegionConsumer myConsumer;
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
     @EJB private JavaErlServicesClient myErlangClient;
