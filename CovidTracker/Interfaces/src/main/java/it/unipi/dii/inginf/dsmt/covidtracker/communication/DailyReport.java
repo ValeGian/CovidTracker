@@ -46,4 +46,8 @@ public class DailyReport implements Serializable {
     public void addTotalDead(int totalDead) {
         this.totalDead += totalDead;
     }
+
+    public String toString() {
+        return "Swabs:" + totalSwab + "/Positives:" + totalPositive + "/Negatives:" + totalNegative + "/Dead:" + totalDead;
+    }
 }

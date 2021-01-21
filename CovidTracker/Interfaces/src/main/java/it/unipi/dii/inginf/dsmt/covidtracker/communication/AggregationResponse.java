@@ -58,6 +58,6 @@ public class AggregationResponse implements Serializable {
     }
 
     public String toString() {
-        return startDay + "-" + lastDay + "] " + operation + " - " + type + " = " + result;
+        return "[" + startDay + "-" + lastDay + "] " + operation + " - " + type + " = " + result;
     }
 }

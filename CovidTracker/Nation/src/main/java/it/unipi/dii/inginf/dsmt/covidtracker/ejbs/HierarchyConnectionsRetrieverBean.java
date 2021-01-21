@@ -51,6 +51,23 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
     }
 
     @Override
+    public String getNationName() throws IOException, ParseException {
+        return NATION_NAME;
+    }
+
+    @Override
+    public List<String> getAllAreasName() throws IOException, ParseException {
+        List<String> areasName = new ArrayList<>();
+
+        JSONArray areasList = (JSONArray) getJsonObject().get("nationChildren");
+        for (int i = 0; i < areasList.size(); i++) {
+            String areaName = areasList.get(i).toString();
+            areasName.add(areaName);
+        }
+        return areasName;
+    }
+
+    @Override
     public List<String> getAllRegionsName() throws IOException, ParseException {
         List<String> regionsName = new ArrayList<>();
 

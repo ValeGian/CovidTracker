@@ -9,19 +9,25 @@
         <module name="Nation" />
         <module name="RegionWeb" />
         <module name="Interfaces" />
-        <module name="Region" />
         <module name="Area" />
         <module name="Beans" />
+        <module name="AreaServerWeb" />
+        <module name="Region" />
+        <module name="NationServerWeb" />
+        <module name="RegionServerWeb" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="Area" target="1.8" />
       <module name="areaBeans" target="1.8" />
+      <module name="AreaServerWeb" target="1.8" />
       <module name="Beans" target="1.8" />
       <module name="Interfaces" target="1.8" />
       <module name="Nation" target="1.8" />
+      <module name="NationServerWeb" target="1.8" />
       <module name="Region" target="1.8" />
       <module name="regionBeans" target="1.8" />
+      <module name="RegionServerWeb" target="1.8" />
       <module name="RegionWeb" target="1.8" />
     </bytecodeTargetLevel>
   </component>

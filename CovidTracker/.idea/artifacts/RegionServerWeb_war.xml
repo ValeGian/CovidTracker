@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="RegionServerWeb:war">
+    <output-path>$PROJECT_DIR$/RegionServerWeb/target</output-path>
+    <properties id="maven-jee-properties">
+      <options>
+        <module>RegionServerWeb</module>
+        <packaging>war</packaging>
+      </options>
+    </properties>
+    <root id="archive" name="RegionServerWeb-1.0-SNAPSHOT.war">
+      <element id="artifact" artifact-name="RegionServerWeb:war exploded" />
+    </root>
+  </artifact>
+</component>

@@ -1,4 +1,4 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.nation;
+package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
 import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
@@ -7,6 +7,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
+import it.unipi.dii.inginf.dsmt.covidtracker.utility.NationConsumerHandlerImpl;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
@@ -22,17 +23,15 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Stateful(name = "NationNodeEJB")
-public class NationNodeBean implements MessageListener, NationNode {
+public class NationNodeBean implements NationNode {
 
-    private final static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-    private static ScheduledFuture<?> dailyReporterHandle = null;
-    private static ScheduledFuture<?> timeoutHandle = null;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    private final ExecutorService looper = Executors.newFixedThreadPool(1);
+    private ScheduledFuture<?> dailyReporterHandle = null;
+    private ScheduledFuture<?> timeoutHandle = null;
 
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
@@ -41,11 +40,14 @@ public class NationNodeBean implements MessageListener, NationNode {
     private static List<String> myChildrenDestinationNames;
 
     @EJB private Producer myProducer;
-    @EJB private NationConsumerHandler myConsumer;
+    @EJB private Recorder myRecorder;
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
     @EJB private JavaErlServicesClient myErlangClient;
+    private NationConsumerHandler myMessageHandler = new NationConsumerHandlerImpl();
     private final KVManager myKVManager = new KVManagerImpl();
     private final Gson gson = new Gson();
+
+    private JMSConsumer myQueueConsumer;
 
     public NationNodeBean() {
     }
@@ -56,23 +58,40 @@ public class NationNodeBean implements MessageListener, NationNode {
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
             myChildrenDestinationNames = myHierarchyConnectionsRetriever.getChildrenDestinationName(myName);
 
-            setMessageListener(myDestinationName);
-            myConsumer.initializeParameters(myDestinationName, myChildrenDestinationNames);
+            setQueueConsumer(myDestinationName);
+            myMessageHandler.initializeParameters(myDestinationName, myChildrenDestinationNames);
 
             restartDailyThread();
+            startReceivingLoop();
         } catch (IOException | ParseException ex) {
             throw new IllegalStateException(ex);
         }
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+
     @Override
-    public void onMessage(Message msg) {
+    public String readReceivedMessages() {
+        return myRecorder.readResponses();
+    }
+
+    @Override
+    public void closeDailyRegistry() {
+        sendRegistryClosureRequests();
+        restartDailyThread();
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    public void handleMessage(Message msg) {
         if (msg instanceof ObjectMessage) {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
+                myRecorder.addResponse(cMsg);
+
                 switch (cMsg.getMessageType()) {
                     case AGGREGATION_REQUEST:
-                        Pair<String, CommunicationMessage> messageToSend = myConsumer.handleAggregationRequest(cMsg);
+                        Pair<String, CommunicationMessage> messageToSend = myMessageHandler.handleAggregationRequest(cMsg);
                         if(messageToSend.getKey().equals(myDestinationName))
                             handleAggregation((ObjectMessage) msg);
                         else if(messageToSend.getKey().equals("flood"))
@@ -82,12 +101,11 @@ public class NationNodeBean implements MessageListener, NationNode {
                         break;
 
                     case DAILY_REPORT:
-                        myConsumer.handleDailyReport(cMsg);
+                        myMessageHandler.handleDailyReport(cMsg);
                         break;
 
                     default:
                         break;
-
                 }
             } catch (final JMSException e) {
                 throw new RuntimeException(e);
@@ -97,25 +115,7 @@ public class NationNodeBean implements MessageListener, NationNode {
 
     //------------------------------------------------------------------------------------------------------------------
 
-
-    private void setMessageListener(final String QUEUE_NAME) {
-        try{
-            Context ic = new InitialContext();
-            Queue myQueue= (Queue)ic.lookup(QUEUE_NAME);
-            QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(this);
-        }
-        catch (final NamingException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void saveDailyReport(DailyReport dailyReport) {
-        myKVManager.addDailyReport(dailyReport);
-    }
-
-    public void restartDailyThread() {
+    private void restartDailyThread() {
         if(dailyReporterHandle != null)
             dailyReporterHandle.cancel(true);
         if(timeoutHandle != null)
@@ -124,7 +124,7 @@ public class NationNodeBean implements MessageListener, NationNode {
         final Runnable timeout = new Runnable() {
             @Override
             public void run() {
-                saveDailyReport(myConsumer.getDailyReport());
+                saveDailyReport(myMessageHandler.getDailyReport());
             }
         };
 
@@ -137,7 +137,40 @@ public class NationNodeBean implements MessageListener, NationNode {
         };
 
         dailyReporterHandle = scheduler.scheduleAtFixedRate(dailyReporter, secondsUntilMidnight(), 60*60*24, TimeUnit.SECONDS);
+    }
 
+    private void startReceivingLoop() {
+        final Runnable receivingLoop = new Runnable() {
+            @Override
+            public void run() {
+                while(true) {
+                    Message inMsg = myQueueConsumer.receive(100);
+                    if(inMsg != null)
+                        handleMessage(inMsg);
+                }
+            }
+        };
+        looper.execute(receivingLoop);
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    private void setQueueConsumer(final String QUEUE_NAME) {
+        try{
+            Context ic = new InitialContext();
+            Queue myQueue= (Queue)ic.lookup(QUEUE_NAME);
+            QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
+            myQueueConsumer = qcf.createContext().createConsumer(myQueue);
+            //qcf.createContext().createConsumer(myQueue).setMessageListener(this);
+        }
+        catch (final NamingException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void saveDailyReport(DailyReport dailyReport) {
+        myKVManager.addDailyReport(dailyReport);
     }
 
     private void sendRegistryClosureRequests() {
@@ -147,15 +180,6 @@ public class NationNodeBean implements MessageListener, NationNode {
 
         for(String childDestinationName: myChildrenDestinationNames)
             myProducer.enqueue(childDestinationName, regClosureMsg);
-    }
-
-    void handleUserInput(String userInput) {
-        if(userInput.equals("REGISTRY_CLOSURE")) {
-            sendRegistryClosureRequests();
-            restartDailyThread();
-        } else {
-            System.out.println("Command not recognized!");
-        }
     }
 
     private void handleAggregation(ObjectMessage msg) {
@@ -222,5 +246,4 @@ public class NationNodeBean implements MessageListener, NationNode {
         ZonedDateTime midnight = now.toLocalDate().plusDays(1).atStartOfDay(zone);
         return Duration.between(now, midnight).getSeconds();
     }
-
 }

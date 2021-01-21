@@ -11,9 +11,13 @@ public interface HierarchyConnectionsRetriever {
 
     String getMyDestinationName(final String nodeName) throws IOException, ParseException;
 
-    String getParentDestinationName(final String childName) throws IOException, ParseException ;
+    String getParentDestinationName(final String childName) throws IOException, ParseException;
 
-    List<String> getChildrenDestinationName(final String parentName) throws IOException, ParseException ;
+    List<String> getChildrenDestinationName(final String parentName) throws IOException, ParseException;
+
+    String getNationName() throws IOException, ParseException;
+
+    List<String> getAllAreasName() throws IOException, ParseException;
 
     List<String> getAllRegionsName() throws IOException, ParseException;
 

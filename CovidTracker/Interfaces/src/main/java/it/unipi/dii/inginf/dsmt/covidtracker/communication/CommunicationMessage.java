@@ -43,4 +43,8 @@ public class CommunicationMessage implements Serializable {
     public void setMessageBody(String messageBody) {
         this.messageBody = messageBody;
     }
+
+    public String toString() {
+        return messageType.toString() + "] Sender:" + senderName + " - Message Content:" + messageBody;
+    }
 }
