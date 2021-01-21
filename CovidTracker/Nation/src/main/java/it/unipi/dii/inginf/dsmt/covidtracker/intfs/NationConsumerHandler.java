@@ -7,7 +7,6 @@ import javafx.util.Pair;
 import javax.ejb.Local;
 import java.util.List;
 
-@Local
 public interface NationConsumerHandler {
 
     void initializeParameters(String name, List<String> childrenAreas);

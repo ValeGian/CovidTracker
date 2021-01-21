@@ -4,5 +4,6 @@ import javax.ejb.Remote;
 
 @Remote
 public interface NationNode {
-    public void restartDailyThread();
+    String readReceivedMessages();
+    void closeDailyRegistry();
 }

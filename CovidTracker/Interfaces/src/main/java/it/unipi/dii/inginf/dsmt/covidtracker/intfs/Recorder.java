@@ -7,5 +7,5 @@ import javax.ejb.Remote;
 @Remote
 public interface Recorder {
     String readResponses();
-    void addResponse(AggregationResponse response);
+    void addResponse(Object response);
 }

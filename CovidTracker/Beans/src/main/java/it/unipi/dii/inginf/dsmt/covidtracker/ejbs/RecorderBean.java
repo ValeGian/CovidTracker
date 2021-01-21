@@ -25,7 +25,7 @@ public class RecorderBean implements Recorder {
     }
 
     @Override
-    public void addResponse(AggregationResponse response) {
+    public void addResponse(Object response) {
         responses.add(response.toString());
     }
 }

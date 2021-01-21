@@ -1,4 +1,4 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
+package it.unipi.dii.inginf.dsmt.covidtracker.utility;
 
 import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
@@ -7,18 +7,16 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.NationConsumerHandler;
 import javafx.util.Pair;
 
-import javax.ejb.Stateful;
 import java.util.List;
 
-@Stateful(name = "NationConsumerEJB")
-public class NationConsumerHandlerBean implements NationConsumerHandler {
+public class NationConsumerHandlerImpl implements NationConsumerHandler {
 
     String myDestinationName;
     List<String> childrenAreas;
     boolean[] isReceivedDailyReport;
     DailyReport[] receivedDailyReport;
 
-    public NationConsumerHandlerBean() {
+    public NationConsumerHandlerImpl() {
 
     }
 

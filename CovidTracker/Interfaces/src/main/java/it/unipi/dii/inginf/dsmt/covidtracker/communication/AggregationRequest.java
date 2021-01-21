@@ -67,4 +67,8 @@ public class AggregationRequest implements Serializable {
     public String toKey(){
         return type + ":" + operation + ":" + startDay + ":" + lastDay;
     }
+
+    public String toString() {
+        return "[" + startDay + "-" + lastDay + "] " + operation + " - " + type + " on " + destination;
+    }
 }

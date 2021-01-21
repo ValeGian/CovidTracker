@@ -37,12 +37,13 @@ public class RegionServlet extends HttpServlet {
     @EJB private SynchRequester myRequester;
     @EJB private Producer myProducer;
 
-    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
         HttpSession session = req.getSession(true);
         String region = (String) session.getAttribute("region");
         if(region != null) {
             try {
-                regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
+                //regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
+                regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(myHierarchyConnectionsRetriever.getNationName());
 
                 resp.setContentType("text/html");
                 PrintWriter out = resp.getWriter();
@@ -52,7 +53,7 @@ public class RegionServlet extends HttpServlet {
 
                 // LOG FORM
                 out.println("<h2>Log new data</h2>");
-                out.println("<form action=\"" + req.getContextPath() + "/region/regionUI.jsp\" method=\"GET\">");
+                out.println("<form action=\"" + req.getContextPath() + regionPage + "\" method=\"GET\">");
 
                 out.println("<label for=\"log_type\">Choose a log type:</label>");
                 out.println("<select name=\"log_type\" id=\"log_type\">");
@@ -72,7 +73,7 @@ public class RegionServlet extends HttpServlet {
 
                 // AGGREGATION REQUEST FORM
                 out.println("<h2>Request an aggregation</h2>");
-                out.println("<form action=\"" + req.getContextPath() + "/region/regionUI.jsp\" method=\"GET\">");
+                out.println("<form action=\"" + req.getContextPath() + regionPage + "\" method=\"GET\">");
 
                 out.println("<label for=\"aggr_dest\">Choose a region to connect:</label>");
                 out.println("<select name=\"aggr_dest\" id=\"aggr_dest\">");
