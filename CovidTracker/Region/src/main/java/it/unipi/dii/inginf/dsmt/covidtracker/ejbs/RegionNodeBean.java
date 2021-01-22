@@ -1,4 +1,4 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.region;
+package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;

@@ -1,2 +1,2 @@
 Manifest-Version: 1.0
-Main-Class: it.unipi.dii.inginf.dsmt.covidtracker.area.AreaNodeBean
+Main-Class: it.unipi.dii.inginf.dsmt.covidtracker.ejb.AreaNodeBean

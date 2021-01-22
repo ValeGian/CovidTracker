@@ -48,6 +48,19 @@ public class KVManagerImpl implements KVManager {
         }
     }
 
+    private static DB openClientRequestDB() {
+        DB db = null;
+        Options options = new Options();
+        options.createIfMissing(true);
+        try {
+            db = factory.open(new File(fileName + "ClientRequest"), options);
+        } catch (IOException ioe) {
+            System.err.println("Connection Failed!\n");
+        } finally {
+            return db;
+        }
+    }
+
     public boolean addDailyReport(DailyReport dailyReport) {
         try (DB db = openDB();
              WriteBatch batch = db.createWriteBatch()) {
@@ -67,6 +80,7 @@ public class KVManagerImpl implements KVManager {
         }
         return true;
     }
+
 
     public List<Integer> getDailyReportsInAPeriod(String initialDateS, String finalDateS, String type) {
         List<Integer> searchedReports = new ArrayList<>();
@@ -138,4 +152,42 @@ public class KVManagerImpl implements KVManager {
 
         return -1;
     }
+
+    public void addClientRequest(String clientRequest){
+        ZonedDateTime startOfToday = LocalDate.now().atStartOfDay(ZoneId.systemDefault());
+        long todayMillis = startOfToday.toEpochSecond() * 1000;
+
+        long millisecond = todayMillis - startingPoint;
+
+        try (DB db = openDB()){
+            db.put(bytes(String.valueOf(millisecond)), bytes(clientRequest));
+        } catch (DBException | IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public String getAllClientRequest() {
+
+        List<String> clientRequest = new ArrayList<>();
+
+        try (DB db = openClientRequestDB(); DBIterator iterator = db.iterator()) {
+            for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
+                clientRequest.add(asString(iterator.peekNext().getValue()));
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+            return "";
+        }
+
+        return listToString(clientRequest);
+    }
+
+    private String listToString(List<String> inputList) {
+        String outMsg = "";
+        for(String m : inputList) {
+            outMsg += m+"\n";
+        }
+        return outMsg;
+    }
+
 }

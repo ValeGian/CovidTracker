@@ -1,4 +1,4 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.area;
+package it.unipi.dii.inginf.dsmt.covidtracker.ejb;
 
 import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 @Stateless(name = "AreaNodeEJB")
 public class AreaNodeBean implements MessageListener, AreaNode {
 
-    private KVManagerImpl myDb;
+    private KVManagerImpl myKVManager;
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     @SuppressWarnings({"all"})
@@ -49,7 +49,7 @@ public class AreaNodeBean implements MessageListener, AreaNode {
         try {
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
             setMessageListener(myDestinationName);
-            myDb = new KVManagerImpl(myName);
+            myKVManager = new KVManagerImpl(myName);
             myConsumer.initializeParameters(myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName(myName), myHierarchyConnectionsRetriever.getParentDestinationName(myName));
         }catch (IOException | ParseException parseException){
             throw new RuntimeException(parseException);
@@ -79,7 +79,10 @@ public class AreaNodeBean implements MessageListener, AreaNode {
         if (msg instanceof ObjectMessage) {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
+                myKVManager.addClientRequest(cMsg.toString());
+
                 Pair<String, CommunicationMessage> messageToSend;
+
                 switch (cMsg.getMessageType()) {
 
                     case REGISTRY_CLOSURE_REQUEST:
@@ -126,17 +129,17 @@ public class AreaNodeBean implements MessageListener, AreaNode {
             AggregationResponse response = new AggregationResponse(request);
 
             if (request.getStartDay() == request.getLastDay()) {
-                result = myDb.getDailyReport(request.getLastDay(), request.getType());
+                result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
 
             } else {
-                result = myDb.getAggregation(request);
+                result = myKVManager.getAggregation(request);
                 if (result == -1.0) {
                     try {
                         result = myErlangClient.computeAggregation(
                                 request.getOperation(),
-                                myDb.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
+                                myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
-                        myDb.saveAggregation(request, result);
+                        myKVManager.saveAggregation(request, result);
                     } catch (IOException e) {
                         e.printStackTrace();
                         result = 0.0;
@@ -153,5 +156,5 @@ public class AreaNodeBean implements MessageListener, AreaNode {
         }
     }
 
-    private void saveDailyReport(DailyReport dailyReport) { myDb.addDailyReport(dailyReport); }
+    private void saveDailyReport(DailyReport dailyReport) { myKVManager.addDailyReport(dailyReport); }
 }

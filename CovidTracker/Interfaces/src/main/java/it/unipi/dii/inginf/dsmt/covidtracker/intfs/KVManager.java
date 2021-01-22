@@ -17,4 +17,8 @@ public interface KVManager {
 
     void saveAggregation(AggregationRequest aggregation, double result);
 
+    String getAllClientRequest();
+
+    void addClientRequest(String clientRequest);
+
 }

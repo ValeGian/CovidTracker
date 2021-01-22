@@ -48,7 +48,6 @@ public class NationNodeBean implements NationNode {
     private static List<String> myChildrenDestinationNames;
 
     @EJB private Producer myProducer;
-    @EJB private Recorder myRecorder;
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
     @EJB private JavaErlServicesClient myErlangClient;
     private NationConsumerHandler myMessageHandler = new NationConsumerHandlerImpl();
@@ -79,9 +78,7 @@ public class NationNodeBean implements NationNode {
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public String readReceivedMessages() {
-            return myRecorder.readResponses();
-    }
+    public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
 
     @Override
     public void closeDailyRegistry() {
@@ -99,7 +96,7 @@ public class NationNodeBean implements NationNode {
         if (msg instanceof ObjectMessage) {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
-                myRecorder.addResponse(cMsg);
+                myKVManager.addClientRequest(cMsg.toString());
 
                 switch (cMsg.getMessageType()) {
                     case AGGREGATION_REQUEST:
