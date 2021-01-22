@@ -21,4 +21,6 @@ public interface KVManager {
 
     void addClientRequest(String clientRequest);
 
+    void deleteAllClientRequest();
+
 }

@@ -22,17 +22,26 @@ public class KVManagerImpl implements KVManager {
     private static String fileName;
 
     public KVManagerImpl(String myName) {
+        System.out.println("CIAO");
         fileName = myName + "KVDb";
     }
 
     public static void main(String[] args){
         KVManagerImpl kv = new KVManagerImpl("prova");
-        AggregationRequest a = new AggregationRequest();
-        a.setStartDay("28/12/2020");
-        a.setLastDay("31/12/2020");
-        kv.saveAggregation(a, 4);
-        Double d = kv.getAggregation(a);
-        System.out.println(kv.getAggregation(a));
+        System.out.println("CIAO");
+
+        kv.addClientRequest("prova");
+        kv.addClientRequest("prova1");
+        kv.addClientRequest("prova2");
+        kv.addClientRequest("prova3");
+        System.out.println("CIAO3");
+        //DailyReport r = new DailyReport();
+        //r.addTotalDead(3);
+        //kv.addDailyReport(r);
+        System.out.println("TROVATI: " + kv.getAllClientRequest());
+        System.out.println("CIAO FINALE");
+
+
     }
 
     private static DB openDB() {
@@ -154,12 +163,10 @@ public class KVManagerImpl implements KVManager {
     }
 
     public void addClientRequest(String clientRequest){
-        ZonedDateTime startOfToday = LocalDate.now().atStartOfDay(ZoneId.systemDefault());
-        long todayMillis = startOfToday.toEpochSecond() * 1000;
 
-        long millisecond = todayMillis - startingPoint;
+        long millisecond = ZonedDateTime.now().toInstant().toEpochMilli() - startingPoint;
 
-        try (DB db = openDB()){
+        try (DB db = openClientRequestDB()){
             db.put(bytes(String.valueOf(millisecond)), bytes(clientRequest));
         } catch (DBException | IOException ex) {
             ex.printStackTrace();
@@ -188,6 +195,17 @@ public class KVManagerImpl implements KVManager {
             outMsg += m+"\n";
         }
         return outMsg;
+    }
+
+    public void deleteAllClientRequest(){
+
+        try (DB db = openClientRequestDB(); DBIterator iterator = db.iterator()) {
+            for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
+                db.delete(iterator.peekNext().getKey());
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
 }

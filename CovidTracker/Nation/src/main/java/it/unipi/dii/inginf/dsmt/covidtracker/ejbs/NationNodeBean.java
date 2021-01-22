@@ -67,7 +67,7 @@ public class NationNodeBean implements NationNode {
 
             setQueueConsumer(myDestinationName);
             myMessageHandler.initializeParameters(myDestinationName, myChildrenDestinationNames);
-
+            myKVManager.deleteAllClientRequest();
             restartDailyThread();
             startReceivingLoop();
         } catch (IOException | ParseException ex) {
