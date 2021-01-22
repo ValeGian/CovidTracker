@@ -1,6 +1,5 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationResponse;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Recorder;
 
 import javax.ejb.Stateful;

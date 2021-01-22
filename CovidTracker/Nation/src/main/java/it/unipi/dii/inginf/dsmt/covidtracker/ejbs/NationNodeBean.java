@@ -12,9 +12,12 @@ import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
+import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateful;
+import javax.enterprise.concurrent.ManagedExecutorService;
+import javax.enterprise.concurrent.ManagedScheduledExecutorService;
 import javax.jms.*;
 import javax.naming.*;
 import java.io.IOException;
@@ -28,8 +31,13 @@ import java.util.concurrent.*;
 @Stateful(name = "NationNodeEJB")
 public class NationNodeBean implements NationNode {
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-    private final ExecutorService looper = Executors.newFixedThreadPool(1);
+    @SuppressWarnings({"all"})
+    @Resource(mappedName = "concurrent/__defaultManagedScheduledExecutorService")
+    private ManagedScheduledExecutorService scheduler;
+
+    @Resource(mappedName = "concurrent/__defaultManagedExecutorService")
+    private ManagedExecutorService executor;
+
     private ScheduledFuture<?> dailyReporterHandle = null;
     private ScheduledFuture<?> timeoutHandle = null;
 
@@ -72,13 +80,17 @@ public class NationNodeBean implements NationNode {
 
     @Override
     public String readReceivedMessages() {
-        return myRecorder.readResponses();
+            return myRecorder.readResponses();
     }
 
     @Override
     public void closeDailyRegistry() {
-        sendRegistryClosureRequests();
-        restartDailyThread();
+        try {
+            sendRegistryClosureRequests();
+            restartDailyThread();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -107,7 +119,7 @@ public class NationNodeBean implements NationNode {
                     default:
                         break;
                 }
-            } catch (final JMSException e) {
+            } catch (final NamingException | JMSException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -131,8 +143,12 @@ public class NationNodeBean implements NationNode {
         final Runnable dailyReporter = new Runnable() {
             @Override
             public void run() {
-                sendRegistryClosureRequests();
-                timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60*30, TimeUnit.SECONDS);
+                try {
+                    sendRegistryClosureRequests();
+                    timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60 * 30, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         };
 
@@ -143,14 +159,17 @@ public class NationNodeBean implements NationNode {
         final Runnable receivingLoop = new Runnable() {
             @Override
             public void run() {
-                while(true) {
-                    Message inMsg = myQueueConsumer.receive(100);
-                    if(inMsg != null)
+                try {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        Message inMsg = myQueueConsumer.receive();
                         handleMessage(inMsg);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         };
-        looper.execute(receivingLoop);
+        executor.execute(receivingLoop);
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -173,13 +192,14 @@ public class NationNodeBean implements NationNode {
         myKVManager.addDailyReport(dailyReport);
     }
 
-    private void sendRegistryClosureRequests() {
+    private void sendRegistryClosureRequests() throws JMSException, NamingException {
         CommunicationMessage regClosureMsg = new CommunicationMessage();
         regClosureMsg.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
         regClosureMsg.setSenderName(myDestinationName);
 
-        for(String childDestinationName: myChildrenDestinationNames)
-            myProducer.enqueue(childDestinationName, regClosureMsg);
+        for(String childDestinationName: myChildrenDestinationNames) {
+                myProducer.enqueue(childDestinationName, regClosureMsg);
+        }
     }
 
     private void handleAggregation(ObjectMessage msg) {
@@ -216,7 +236,7 @@ public class NationNodeBean implements NationNode {
             outMsg.setMessageBody(gson.toJson(response));
             msg.setObject(outMsg);
             myProducer.enqueue(cMsg.getSenderName(), msg);
-        } catch (JMSException e) {
+        } catch (NamingException | JMSException e) {
             e.printStackTrace();
         }
     }
@@ -233,7 +253,7 @@ public class NationNodeBean implements NationNode {
             // flood the message to all the areas
             for (String childDestinationName : myChildrenDestinationNames)
                 myProducer.enqueue(childDestinationName, outMsg);
-        } catch (JMSException e) {
+        } catch (NamingException | JMSException e) {
             e.printStackTrace();
         }
     }

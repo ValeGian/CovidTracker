@@ -37,16 +37,16 @@ public class RegionServlet extends HttpServlet {
     @EJB private SynchRequester myRequester;
     @EJB private Producer myProducer;
 
-    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setContentType("text/html");
+        PrintWriter out = resp.getWriter();
+
         HttpSession session = req.getSession(true);
         String region = (String) session.getAttribute("region");
         if(region != null) {
             try {
                 //regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
                 regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(myHierarchyConnectionsRetriever.getNationName());
-
-                resp.setContentType("text/html");
-                PrintWriter out = resp.getWriter();
 
                 out.println("<HTML> <HEAD> <TITLE> Covid Tracker </TITLE> </HEAD> <BODY BGCOLOR=white>");
                 out.println("<CENTER> <FONT size=+4> Region page sending requests to " + region.substring(0, 1).toUpperCase() + region.substring(1) + "</FONT> </CENTER> <br> <p> ");
@@ -181,6 +181,7 @@ public class RegionServlet extends HttpServlet {
             } catch (Exception ex) {
                 ex.printStackTrace();
                 System.out.println("> webclient servlet test failed");
+                out.println("<FONT size=+1 color=red>" + ex.getMessage() + "</FONT>");
                 throw new ServletException(ex);
             }
         }
