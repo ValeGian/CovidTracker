@@ -52,7 +52,7 @@ public class NationNodeBean implements NationNode {
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
     @EJB private JavaErlServicesClient myErlangClient;
     private NationConsumerHandler myMessageHandler = new NationConsumerHandlerImpl();
-    private final KVManager myKVManager = new KVManagerImpl();
+    private final KVManager myKVManager = new KVManagerImpl(myName);
     private final Gson gson = new Gson();
 
     private JMSConsumer myQueueConsumer;
@@ -119,7 +119,7 @@ public class NationNodeBean implements NationNode {
                     default:
                         break;
                 }
-            } catch (final NamingException | JMSException e) {
+            } catch (final JMSException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -236,7 +236,7 @@ public class NationNodeBean implements NationNode {
             outMsg.setMessageBody(gson.toJson(response));
             msg.setObject(outMsg);
             myProducer.enqueue(cMsg.getSenderName(), msg);
-        } catch (NamingException | JMSException e) {
+        } catch (JMSException e) {
             e.printStackTrace();
         }
     }
@@ -253,7 +253,7 @@ public class NationNodeBean implements NationNode {
             // flood the message to all the areas
             for (String childDestinationName : myChildrenDestinationNames)
                 myProducer.enqueue(childDestinationName, outMsg);
-        } catch (NamingException | JMSException e) {
+        } catch (JMSException e) {
             e.printStackTrace();
         }
     }

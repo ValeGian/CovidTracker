@@ -29,19 +29,18 @@ public class ProducerBean implements Producer {
     }
 
     @Override
-    public void enqueue(final String consumerName, final CommunicationMessage cMsg) throws NamingException, JMSException{
+    public void enqueue(final String consumerName, final CommunicationMessage cMsg) {
         try {
             ObjectMessage outMsg = myJMSContext.createObjectMessage();
             outMsg.setObject(cMsg);
             enqueue(consumerName, outMsg);
-        } catch (NamingException | JMSException e) {
+        } catch (JMSException e) {
             e.printStackTrace();
-            throw e;
         }
     }
 
     @Override
-    public void enqueue(final String consumerName, final Message outMsg) throws NamingException, JMSException {
+    public void enqueue(final String consumerName, final Message outMsg) {
         try {
             if(consumerName.equals("tmp")) {
                 myJMSContext.createProducer().send(outMsg.getJMSReplyTo(), outMsg);
@@ -51,7 +50,6 @@ public class ProducerBean implements Producer {
             }
         } catch (NamingException | JMSException e) {
             e.printStackTrace();
-            throw e;
         }
     }
 }

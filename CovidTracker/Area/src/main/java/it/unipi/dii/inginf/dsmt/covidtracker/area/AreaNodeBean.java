@@ -11,8 +11,10 @@ import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
+import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.enterprise.concurrent.ManagedScheduledExecutorService;
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -29,8 +31,12 @@ public class AreaNodeBean implements MessageListener, AreaNode {
 
     private KVManagerImpl myDb;
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private static ScheduledFuture<?> timeoutHandle = null;
+
+    @SuppressWarnings({"all"})
+    @Resource(mappedName = "concurrent/__defaultManagedScheduledExecutorService")
+    private ManagedScheduledExecutorService scheduler;
+    private ScheduledFuture<?> timeoutHandle = null;
+
     private final Gson gson = new Gson();
     private String myDestinationName;
     @EJB private Producer myProducer;
