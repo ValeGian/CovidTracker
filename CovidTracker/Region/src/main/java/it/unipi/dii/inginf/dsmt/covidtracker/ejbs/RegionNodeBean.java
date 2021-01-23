@@ -1,5 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
+import intfs.RegionConsumerHandler;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
@@ -8,8 +9,10 @@ import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 import com.google.gson.Gson;
 
+import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.jms.*;
 import javax.jms.Queue;
 import javax.naming.Context;
@@ -21,35 +24,53 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Stateless(name = "RegionNodeEJB")
-public class RegionNodeBean implements MessageListener, RegionNode {
+public class RegionNodeBean implements RegionNode {
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     private CommunicationMessage myCommunicationMessage;
 
+    @Resource(mappedName = "concurrent/__defaultManagedExecutorService")
+    private ManagedExecutorService executor;
+
     @EJB private Producer myProducer;
-    @EJB private RegionConsumer myConsumer;
+    @EJB private RegionConsumerHandler myMessageHandler;
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
     @EJB private JavaErlServicesClient myErlangClient;
 
     private static KVManager myKVManager;
 
 
+    public int messageReceived;
+
     private Map<String, List<DataLog>> dataLogs = new HashMap<String, List<DataLog>>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
                                                                                         //and the value is the list of logs received in that day
     private boolean registryOpened;
     private String myDestinationName;
     private String myAreaDestinationName;
+
+    private JMSConsumer myQueueConsumer;
+
+
     private final Gson gson = new Gson();
+
+    public int getNMessages(){
+        return messageReceived;
+    }
 
     public void initialize(String myName) {
         try {
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
             myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
+
             myKVManager = new KVManagerImpl(myName);
+            myKVManager.deleteAllClientRequest();
 
-            myConsumer.initializeParameters(myDestinationName, myAreaDestinationName);
+            myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
 
-            setMessageListener(myDestinationName);
+            messageReceived = 0;
+            setQueueConsumer(myDestinationName);
+            startReceivingLoop();
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ParseException e) {
@@ -57,26 +78,49 @@ public class RegionNodeBean implements MessageListener, RegionNode {
         }
     }
 
-    void setMessageListener(final String QUEUE_NAME) {
-        try {
+    private void setQueueConsumer(final String QUEUE_NAME) {
+        try{
             Context ic = new InitialContext();
-            Queue myQueue = (Queue) ic.lookup(QUEUE_NAME);
-            QueueConnectionFactory qcf = (QueueConnectionFactory) ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(this);
-        } catch (NamingException e) {
+            Queue myQueue= (Queue)ic.lookup(QUEUE_NAME);
+            QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
+            myQueueConsumer = qcf.createContext().createConsumer(myQueue);
+            //qcf.createContext().createConsumer(myQueue).setMessageListener(this);
+        }
+        catch (final NamingException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
 
+    @Override
+    public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
+
+    private void startReceivingLoop() {
+        final Runnable receivingLoop = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        Message inMsg = myQueueConsumer.receive();
+                        messageReceived++;
+                        handleMessage(inMsg);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        executor.execute(receivingLoop);
+    }
+
     public RegionNodeBean(){ }
 
-
-    @Override
-    public void onMessage(Message msg) {
+    public void handleMessage(Message msg) {
         if (msg instanceof ObjectMessage) {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
+                myKVManager.addClientRequest(cMsg.toString());
+
                 Pair<String, CommunicationMessage> messageToSend;
                 Gson gson = new Gson();
 
@@ -87,7 +131,7 @@ public class RegionNodeBean implements MessageListener, RegionNode {
                         closeRegister(myAreaDestinationName);
                         break;
                     case AGGREGATION_REQUEST:
-                        messageToSend = myConsumer.handleAggregationRequest(cMsg);
+                        messageToSend = myMessageHandler.handleAggregationRequest(cMsg);
                         if (messageToSend.getValue().getMessageType() == MessageType.AGGREGATION_REQUEST)
                             myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                         else
@@ -125,10 +169,10 @@ public class RegionNodeBean implements MessageListener, RegionNode {
 
             myKVManager.addDailyReport(dailyReport);
 
-            CommunicationMessage communicationMessage = new CommunicationMessage();
-            communicationMessage.setMessageType(MessageType.DAILY_REPORT);
-            communicationMessage.setMessageBody(gson.toJson(dailyReport));
-            myProducer.enqueue(destination, communicationMessage);
+            CommunicationMessage outMsg = new CommunicationMessage();
+            outMsg.setMessageType(MessageType.DAILY_REPORT);
+            outMsg.setMessageBody(gson.toJson(dailyReport));
+            myProducer.enqueue(destination, outMsg);
         }
     }
 
