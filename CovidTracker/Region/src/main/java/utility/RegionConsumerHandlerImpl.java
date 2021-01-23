@@ -1,27 +1,20 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
+package utility;
 
 import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.JavaErlServicesClient;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionConsumer;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.KVManager;
-import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
+import intfs.RegionConsumerHandler;
 import javafx.util.Pair;
 
 import javax.ejb.Stateful;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Stateful(name = "RegionConsumerEJB")
-public class RegionConsumerBean implements RegionConsumer {
+public class RegionConsumerHandlerImpl implements RegionConsumerHandler {
 
     String myName;
     String myParent;
-    CommunicationMessage myCommunicationMessage;
+    CommunicationMessage myCommunicationMessage = new CommunicationMessage();
 
     @Override
     public void initializeParameters(String myName, String parent) {
