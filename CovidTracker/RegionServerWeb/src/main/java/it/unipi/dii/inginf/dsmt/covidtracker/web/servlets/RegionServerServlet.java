@@ -1,7 +1,11 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionNode;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.areaInterfaces.AreaNode;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionNode;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionPiemonte;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionValleDAosta;
 
+import javax.ejb.EJB;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -18,13 +22,16 @@ public class RegionServerServlet extends HttpServlet {
     private static final String REGION_NODE_JNDI = "java:global/Region_ejb_exploded/RegionNodeEJB";
     private static final String regionPage = "/server_region/serverRegionUI.jsp";
 
+    @EJB RegionValleDAosta regionValleDAosta;
+    @EJB RegionPiemonte regionPiemonte;
+
 
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
         HttpSession session = req.getSession(true);
         String server = (String) session.getAttribute("regionServer");
 
         if(server != null) {
-            RegionNode myNode = lookupSessionNode(session, server);
+            RegionNode myNode = getRegion(server);
             try {
                 resp.setContentType("text/html");
                 PrintWriter out = resp.getWriter();
@@ -49,20 +56,15 @@ public class RegionServerServlet extends HttpServlet {
         }
     }
 
-    private RegionNode lookupSessionNode(HttpSession session, String name) {
-        RegionNode rNode = (RegionNode) session.getAttribute("cachedRegionNodeRef");
-        if (rNode == null) {
-            try {
-                Context c = new InitialContext();
-                rNode = (RegionNode) c.lookup(REGION_NODE_JNDI);
-                rNode.initialize(name);
+    public RegionNode getRegion(String ejb) {
 
-            } catch (NamingException ne) {
-                System.out.println(ne.getMessage());
-                throw new RuntimeException(ne);
-            }
-            session.setAttribute("cachedRegionNodeRef", rNode);
+        switch(ejb)
+        {
+            case "valledaosta":
+                return regionValleDAosta;
+            case "piemonte":
+                return regionPiemonte;
         }
-        return rNode;
+        return null;
     }
 }
