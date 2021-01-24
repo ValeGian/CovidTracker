@@ -6,5 +6,4 @@ import javax.ejb.Remote;
 public interface RegionNode {
     void initialize(String myName);
     String readReceivedMessages();
-    int getNMessages();
 }

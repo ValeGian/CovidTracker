@@ -4,14 +4,16 @@ import intfs.RegionConsumerHandler;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 import com.google.gson.Gson;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.ejb.EJB;
-import javax.ejb.Stateless;
+import javax.ejb.Stateful;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.jms.*;
 import javax.jms.Queue;
@@ -23,11 +25,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@Stateless(name = "RegionNodeEJB")
+@Stateful(name = "RegionNodeEJB")
 public class RegionNodeBean implements RegionNode {
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
-
-    private CommunicationMessage myCommunicationMessage;
 
     @Resource(mappedName = "concurrent/__defaultManagedExecutorService")
     private ManagedExecutorService executor;
@@ -39,42 +39,42 @@ public class RegionNodeBean implements RegionNode {
 
     private static KVManager myKVManager;
 
+    private Map<String, List<DataLog>> dataLogs = new HashMap<>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
+    //and the value is the list of logs received in that day
 
-    public int messageReceived;
-
-    private Map<String, List<DataLog>> dataLogs = new HashMap<String, List<DataLog>>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
-                                                                                        //and the value is the list of logs received in that day
+    private boolean initialized = false;
     private boolean registryOpened;
     private String myDestinationName;
     private String myAreaDestinationName;
 
     private JMSConsumer myQueueConsumer;
 
-
     private final Gson gson = new Gson();
 
-    public int getNMessages(){
-        return messageReceived;
+    @PostConstruct
+    public void init() {
+        initialize("valledaosta");
     }
 
     public void initialize(String myName) {
-        try {
-            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
-            myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
+        if(!initialized) {
+            try {
+                myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
+                myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
 
-            myKVManager = new KVManagerImpl(myName);
-            myKVManager.deleteAllClientRequest();
+                myKVManager = new KVManagerImpl(myName);
+                myKVManager.deleteAllClientRequest();
 
-            myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
+                myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
 
-            messageReceived = 0;
-            setQueueConsumer(myDestinationName);
-            startReceivingLoop();
+                setQueueConsumer(myDestinationName);
+                startReceivingLoop();
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
+                initialized = true;
+
+            } catch (ParseException | IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -96,16 +96,23 @@ public class RegionNodeBean implements RegionNode {
     public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
 
     private void startReceivingLoop() {
+        CTLogger.getLogger(this.getClass()).info("startReceivingLoop");
         final Runnable receivingLoop = new Runnable() {
             @Override
             public void run() {
                 try {
                     while (!Thread.currentThread().isInterrupted()) {
+                        CTLogger.getLogger(this.getClass()).info("startReceivingLoop: PRE Receive");
                         Message inMsg = myQueueConsumer.receive();
-                        messageReceived++;
-                        handleMessage(inMsg);
+                        CTLogger.getLogger(this.getClass()).info("startReceivingLoop: Post Receive - " + inMsg);
+                        if(inMsg != null) {
+                            handleMessage(inMsg);
+                        } else {
+                            CTLogger.getLogger(this.getClass()).warn("startReceivingLoop: Post Receive - message null");
+                        }
                     }
                 } catch (Exception e) {
+                    CTLogger.getLogger(this.getClass()).error("startReceivingLoop - eccezione: " + e);
                     e.printStackTrace();
                 }
             }
@@ -120,9 +127,9 @@ public class RegionNodeBean implements RegionNode {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
                 myKVManager.addClientRequest(cMsg.toString());
+                CTLogger.getLogger(this.getClass()).info(cMsg.toString());
 
                 Pair<String, CommunicationMessage> messageToSend;
-                Gson gson = new Gson();
 
                 switch (cMsg.getMessageType()) {
                     case NO_ACTION_REQUEST:

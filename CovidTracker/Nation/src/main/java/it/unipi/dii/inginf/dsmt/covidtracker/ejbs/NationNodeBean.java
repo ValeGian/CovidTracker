@@ -56,6 +56,42 @@ public class NationNodeBean implements NationNode {
 
     private JMSConsumer myQueueConsumer;
 
+    final Runnable timeout = new Runnable() {
+        @Override
+        public void run() {
+            saveDailyReport(myMessageHandler.getDailyReport());
+        }
+    };
+
+    final Runnable dailyReporter = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                sendRegistryClosureRequests();
+                //waits for half an hour for responses from its children, then closes its own daily registry
+                timeoutHandle = scheduler.schedule(timeout, 60 * 30, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
+
+    final Runnable receivingLoop = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    Message inMsg = myQueueConsumer.receive();
+                    handleMessage(inMsg);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
+
+    //------------------------------------------------------------------------------------------------------------------
+
     public NationNodeBean() {
     }
 
@@ -68,6 +104,7 @@ public class NationNodeBean implements NationNode {
             setQueueConsumer(myDestinationName);
             myMessageHandler.initializeParameters(myDestinationName, myChildrenDestinationNames);
             myKVManager.deleteAllClientRequest();
+
             restartDailyThread();
             startReceivingLoop();
         } catch (IOException | ParseException ex) {
@@ -130,42 +167,12 @@ public class NationNodeBean implements NationNode {
         if(timeoutHandle != null)
             timeoutHandle.cancel(true);
 
-        final Runnable timeout = new Runnable() {
-            @Override
-            public void run() {
-                saveDailyReport(myMessageHandler.getDailyReport());
-            }
-        };
-
-        final Runnable dailyReporter = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    sendRegistryClosureRequests();
-                    timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60 * 30, TimeUnit.SECONDS);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-
+        //ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit)
+        //Starts a thread which is scheduled to be executed each day at midnight
         dailyReporterHandle = scheduler.scheduleAtFixedRate(dailyReporter, secondsUntilMidnight(), 60*60*24, TimeUnit.SECONDS);
     }
 
     private void startReceivingLoop() {
-        final Runnable receivingLoop = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (!Thread.currentThread().isInterrupted()) {
-                        Message inMsg = myQueueConsumer.receive();
-                        handleMessage(inMsg);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        };
         executor.execute(receivingLoop);
     }
 
@@ -189,7 +196,7 @@ public class NationNodeBean implements NationNode {
         myKVManager.addDailyReport(dailyReport);
     }
 
-    private void sendRegistryClosureRequests() throws JMSException, NamingException {
+    private void sendRegistryClosureRequests() {
         CommunicationMessage regClosureMsg = new CommunicationMessage();
         regClosureMsg.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
         regClosureMsg.setSenderName(myDestinationName);

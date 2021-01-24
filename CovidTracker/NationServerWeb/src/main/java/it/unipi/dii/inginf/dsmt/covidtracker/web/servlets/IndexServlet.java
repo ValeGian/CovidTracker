@@ -1,6 +1,7 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.NationNode;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 
 import javax.ejb.EJB;
 import javax.servlet.ServletException;
