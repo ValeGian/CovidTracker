@@ -1,9 +1,8 @@
-package it.unipi.dii.inginf.dsmt.covidtracker.intfs;
+package it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces;
 
 import javax.ejb.Remote;
 
 @Remote
 public interface RegionNode {
-    void initialize(String myName);
     String readReceivedMessages();
 }

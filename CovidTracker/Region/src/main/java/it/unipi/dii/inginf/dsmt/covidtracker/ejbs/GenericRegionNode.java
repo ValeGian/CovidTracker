@@ -4,6 +4,7 @@ import intfs.RegionConsumerHandler;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionNode;
 import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
@@ -25,60 +26,32 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@Stateful(name = "RegionNodeEJB")
-public class RegionNodeBean implements RegionNode {
+public class GenericRegionNode{
     final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     @Resource(mappedName = "concurrent/__defaultManagedExecutorService")
-    private ManagedExecutorService executor;
+    protected ManagedExecutorService executor;
 
     @EJB private Producer myProducer;
-    @EJB private RegionConsumerHandler myMessageHandler;
-    @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB protected RegionConsumerHandler myMessageHandler;
+    @EJB protected HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
     @EJB private JavaErlServicesClient myErlangClient;
 
-    private static KVManager myKVManager;
+    protected KVManager myKVManager;
 
     private Map<String, List<DataLog>> dataLogs = new HashMap<>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
     //and the value is the list of logs received in that day
 
     private boolean initialized = false;
     private boolean registryOpened;
-    private String myDestinationName;
-    private String myAreaDestinationName;
+    protected String myDestinationName;
+    protected String myAreaDestinationName;
 
-    private JMSConsumer myQueueConsumer;
+    protected JMSConsumer myQueueConsumer;
 
     private final Gson gson = new Gson();
 
-    @PostConstruct
-    public void init() {
-        initialize("valledaosta");
-    }
-
-    public void initialize(String myName) {
-        if(!initialized) {
-            try {
-                myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
-                myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
-
-                myKVManager = new KVManagerImpl(myName);
-                myKVManager.deleteAllClientRequest();
-
-                myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
-
-                setQueueConsumer(myDestinationName);
-                startReceivingLoop();
-
-                initialized = true;
-
-            } catch (ParseException | IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void setQueueConsumer(final String QUEUE_NAME) {
+    protected void setQueueConsumer(final String QUEUE_NAME) {
         try{
             Context ic = new InitialContext();
             Queue myQueue= (Queue)ic.lookup(QUEUE_NAME);
@@ -92,10 +65,9 @@ public class RegionNodeBean implements RegionNode {
         }
     }
 
-    @Override
     public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
 
-    private void startReceivingLoop() {
+    protected void startReceivingLoop() {
         CTLogger.getLogger(this.getClass()).info("startReceivingLoop");
         final Runnable receivingLoop = new Runnable() {
             @Override
@@ -120,7 +92,7 @@ public class RegionNodeBean implements RegionNode {
         executor.execute(receivingLoop);
     }
 
-    public RegionNodeBean(){ }
+    public GenericRegionNode(){ }
 
     public void handleMessage(Message msg) {
         if (msg instanceof ObjectMessage) {
