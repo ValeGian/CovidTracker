@@ -1,5 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejb.Areas;
 
+import it.unipi.dii.inginf.dsmt.covidtracker.ejb.AreaConsumer;
 import it.unipi.dii.inginf.dsmt.covidtracker.ejb.GenericAreaNode;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.areaInterfaces.AreaNorth;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
@@ -18,7 +19,7 @@ public class NorthAreaNode extends GenericAreaNode implements AreaNorth {
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName("north");
             myKVManager = new KVManagerImpl("north");
             myKVManager.deleteAllClientRequest();
-            myConsumer.initializeParameters(myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName("north"), myHierarchyConnectionsRetriever.getParentDestinationName("north"));
+            myConsumer = new AreaConsumer(myKVManager, myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName("north"), myHierarchyConnectionsRetriever.getParentDestinationName("north"));
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
         } catch (IOException e) {

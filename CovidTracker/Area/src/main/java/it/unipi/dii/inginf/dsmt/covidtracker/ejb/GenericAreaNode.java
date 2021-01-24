@@ -7,6 +7,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 
@@ -41,13 +42,15 @@ public class GenericAreaNode {
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     @EJB private Producer myProducer;
-    @EJB protected AreaConsumer myConsumer;
     @EJB private JavaErlServicesClient myErlangClient;
     @EJB protected HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
-    private ScheduledFuture<?> timeoutHandle = null;
+    //private ScheduledFuture<?> timeoutHandle = null;
+    protected AreaConsumer myConsumer;
+
     private final Runnable timeout = () -> saveDailyReport(myConsumer.getDailyReport());
 
+    boolean stop;
     private final Gson gson = new Gson();
     protected String myDestinationName;
 
@@ -102,18 +105,23 @@ public class GenericAreaNode {
                     case REGISTRY_CLOSURE_REQUEST:
                         List<Pair<String, CommunicationMessage>> returnList = myConsumer.handleRegistryClosureRequest(cMsg);
                         if (returnList != null)
-                            for (Pair<String, CommunicationMessage> messageToSendL : returnList)
+                            for (Pair<String, CommunicationMessage> messageToSendL : returnList) {
                                 myProducer.enqueue(messageToSendL.getKey(), messageToSendL.getValue());
-                        timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60 * 25, TimeUnit.SECONDS);
+                                CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSendL.getKey());
+                            }
+                        scheduler.schedule(timeout, 60 * 25, TimeUnit.SECONDS);
                         break;
 
                     case AGGREGATION_REQUEST:
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
                         if (messageToSend != null) {
-                            if (!messageToSend.getKey().equals("mySelf"))
+                            if (!messageToSend.getKey().equals("mySelf")) {
                                 myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
-                            else
+                                CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSend.getKey());
+                            }else {
+                                CTLogger.getLogger(this.getClass()).info("gestisco aggragazione");
                                 handleAggregation((ObjectMessage) msg);
+                            }
                         }
                         break;
 
@@ -124,6 +132,9 @@ public class GenericAreaNode {
                     default:
                         break;
                 }
+
+
+
             } catch (final JMSException e) {
                 throw new RuntimeException(e);
             }

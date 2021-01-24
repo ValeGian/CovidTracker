@@ -1,5 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejb.Areas;
 
+import it.unipi.dii.inginf.dsmt.covidtracker.ejb.AreaConsumer;
 import it.unipi.dii.inginf.dsmt.covidtracker.ejb.GenericAreaNode;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.areaInterfaces.AreaCenter;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
@@ -17,7 +18,7 @@ public class CenterAreaNode extends GenericAreaNode implements AreaCenter {
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName("center");
             myKVManager = new KVManagerImpl("center");
             myKVManager.deleteAllClientRequest();
-            myConsumer.initializeParameters(myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName("center"), myHierarchyConnectionsRetriever.getParentDestinationName("center"));
+            myConsumer = new AreaConsumer(myKVManager, myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName("center"), myHierarchyConnectionsRetriever.getParentDestinationName("center"));
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
         } catch (IOException e) {

@@ -208,4 +208,31 @@ public class KVManagerImpl implements KVManager {
         }
     }
 
+    public void deleteAllInfo(){
+
+        try (DB db = openDB(); DBIterator iterator = db.iterator()) {
+            for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
+                db.delete(iterator.peekNext().getKey());
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public String getAllInfo() {
+
+        List<String> clientRequest = new ArrayList<>();
+
+        try (DB db = openDB(); DBIterator iterator = db.iterator()) {
+            for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
+                clientRequest.add(asString(iterator.peekNext().getValue()));
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+            return "";
+        }
+
+        return listToString(clientRequest);
+    }
+
 }
