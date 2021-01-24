@@ -1,10 +1,10 @@
-package utility;
+package it.unipi.dii.inginf.dsmt.covidtracker.utility;
 
 import com.google.gson.Gson;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
-import intfs.RegionConsumerHandler;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionConsumerHandler;
 import javafx.util.Pair;
 
 import javax.ejb.Stateful;

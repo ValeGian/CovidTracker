@@ -1,20 +1,15 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
-import intfs.RegionConsumerHandler;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.RegionConsumerHandler;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionNode;
 import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
-import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
-import org.json.simple.parser.ParseException;
 import com.google.gson.Gson;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.ejb.EJB;
-import javax.ejb.Stateful;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.jms.*;
 import javax.jms.Queue;
@@ -68,20 +63,13 @@ public class GenericRegionNode{
     public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
 
     protected void startReceivingLoop() {
-        CTLogger.getLogger(this.getClass()).info("startReceivingLoop");
         final Runnable receivingLoop = new Runnable() {
             @Override
             public void run() {
                 try {
                     while (!Thread.currentThread().isInterrupted()) {
-                        CTLogger.getLogger(this.getClass()).info("startReceivingLoop: PRE Receive");
                         Message inMsg = myQueueConsumer.receive();
-                        CTLogger.getLogger(this.getClass()).info("startReceivingLoop: Post Receive - " + inMsg);
-                        if(inMsg != null) {
-                            handleMessage(inMsg);
-                        } else {
-                            CTLogger.getLogger(this.getClass()).warn("startReceivingLoop: Post Receive - message null");
-                        }
+                        handleMessage(inMsg);
                     }
                 } catch (Exception e) {
                     CTLogger.getLogger(this.getClass()).error("startReceivingLoop - eccezione: " + e);
