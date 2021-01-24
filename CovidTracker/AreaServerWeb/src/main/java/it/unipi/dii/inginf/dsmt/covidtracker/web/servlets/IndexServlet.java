@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 
@@ -27,7 +26,7 @@ public class IndexServlet extends HttpServlet {
             PrintWriter out = resp.getWriter();
 
             out.println("<HTML> <HEAD> <TITLE> Covid Tracker </TITLE> </HEAD> <BODY BGCOLOR=white>");
-            out.println("<CENTER> <FONT size=+2> Homepage for all Region Web Servers </FONT> </CENTER> <br> <p> ");
+            out.println("<CENTER> <FONT size=+2> Homepage for all Area Web Servers </FONT> </CENTER> <br> <p> ");
 
             // Server select
             out.println("<form method=\"POST\">");
@@ -61,4 +60,6 @@ public class IndexServlet extends HttpServlet {
             throw new ServletException(ex);
         }
     }
+
+
 }

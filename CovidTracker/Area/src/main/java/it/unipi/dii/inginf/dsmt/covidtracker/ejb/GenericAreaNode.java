@@ -9,63 +9,60 @@ import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
-import org.json.simple.parser.ParseException;
 
 import javax.annotation.Resource;
 import javax.ejb.EJB;
-import javax.ejb.Stateless;
+
+import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.enterprise.concurrent.ManagedScheduledExecutorService;
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
+
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-@Stateless(name = "AreaNodeEJB")
-public class AreaNodeBean implements MessageListener, AreaNode {
 
-    private KVManagerImpl myKVManager;
-    final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
+public class GenericAreaNode {
 
     @SuppressWarnings({"all"})
     @Resource(mappedName = "concurrent/__defaultManagedScheduledExecutorService")
     private ManagedScheduledExecutorService scheduler;
-    private ScheduledFuture<?> timeoutHandle = null;
 
-    private final Gson gson = new Gson();
-    private String myDestinationName;
+    @Resource(mappedName = "concurrent/__defaultManagedExecutorService")
+    protected ManagedExecutorService executor;
+
+    protected KVManagerImpl myKVManager;
+
+    private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
+
     @EJB private Producer myProducer;
-    @EJB private AreaConsumer myConsumer;
+    @EJB protected AreaConsumer myConsumer;
     @EJB private JavaErlServicesClient myErlangClient;
-    @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+    @EJB protected HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
+
+    private ScheduledFuture<?> timeoutHandle = null;
     private final Runnable timeout = () -> saveDailyReport(myConsumer.getDailyReport());
 
-    public void initialize(String myName){
-        try {
-            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
-            setMessageListener(myDestinationName);
-            myKVManager = new KVManagerImpl(myName);
-            myConsumer.initializeParameters(myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName(myName), myHierarchyConnectionsRetriever.getParentDestinationName(myName));
-        }catch (IOException | ParseException parseException){
-            throw new RuntimeException(parseException);
-        }
-    }
+    private final Gson gson = new Gson();
+    protected String myDestinationName;
 
+    private JMSConsumer myQueueConsumer;
 
-    public AreaNodeBean(){}
+    public GenericAreaNode(){}
 
+    public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
 
-    void setMessageListener(final String QUEUE_NAME) {
+    protected void setQueueConsumer(final String QUEUE_NAME) {
         try{
             Context ic = new InitialContext();
-            Queue myQueue = (Queue)ic.lookup(QUEUE_NAME);
+            Queue myQueue= (Queue)ic.lookup(QUEUE_NAME);
             QueueConnectionFactory qcf = (QueueConnectionFactory)ic.lookup(QC_FACTORY_NAME);
-            qcf.createContext().createConsumer(myQueue).setMessageListener(this);
+            myQueueConsumer = qcf.createContext().createConsumer(myQueue);
         }
         catch (final NamingException e) {
             System.err.println(e.getMessage());
@@ -73,10 +70,27 @@ public class AreaNodeBean implements MessageListener, AreaNode {
         }
     }
 
+    protected void startReceivingLoop() {
+        final Runnable receivingLoop = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        Message inMsg = myQueueConsumer.receive();
+                        handleMessage(inMsg);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        executor.execute(receivingLoop);
+    }
 
-    @Override
-    public void onMessage(Message msg) {
-        if (msg instanceof ObjectMessage) {
+
+    public void handleMessage(Message msg) {
+
+        if (msg != null) {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
                 myKVManager.addClientRequest(cMsg.toString());
@@ -86,16 +100,16 @@ public class AreaNodeBean implements MessageListener, AreaNode {
                 switch (cMsg.getMessageType()) {
 
                     case REGISTRY_CLOSURE_REQUEST:
-                        List<Pair<String, CommunicationMessage>> returnList= myConsumer.handleRegistryClosureRequest(cMsg);
-                        if(returnList != null)
-                            for(Pair<String, CommunicationMessage> messageToSendL: returnList)
+                        List<Pair<String, CommunicationMessage>> returnList = myConsumer.handleRegistryClosureRequest(cMsg);
+                        if (returnList != null)
+                            for (Pair<String, CommunicationMessage> messageToSendL : returnList)
                                 myProducer.enqueue(messageToSendL.getKey(), messageToSendL.getValue());
-                        timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60*25, TimeUnit.SECONDS);
+                        timeoutHandle = scheduler.scheduleAtFixedRate(timeout, 0, 60 * 25, TimeUnit.SECONDS);
                         break;
 
                     case AGGREGATION_REQUEST:
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
-                        if(messageToSend != null) {
+                        if (messageToSend != null) {
                             if (!messageToSend.getKey().equals("mySelf"))
                                 myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
                             else

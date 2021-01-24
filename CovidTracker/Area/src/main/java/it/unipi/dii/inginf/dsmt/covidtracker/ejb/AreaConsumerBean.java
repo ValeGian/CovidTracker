@@ -8,6 +8,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.AreaConsumer;
 
 import javafx.util.Pair;
+import org.apache.log4j.Logger;
 
 import javax.ejb.Stateful;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.List;
 
 @Stateful(name = "AreaConsumerEJB")
 public class AreaConsumerBean implements AreaConsumer {
+
     String myDestinationName;
     List<String> myRegions;
     boolean[] checkReceivedDailyReport;
