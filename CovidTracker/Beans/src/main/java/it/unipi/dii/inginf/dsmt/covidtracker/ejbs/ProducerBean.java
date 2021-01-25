@@ -35,9 +35,13 @@ public class ProducerBean implements Producer {
         try {
             ObjectMessage outMsg = myJMSContext.createObjectMessage();
             outMsg.setObject(cMsg);
+            CTLogger.getLogger(this.getClass()).info("invio un messaggio a " + consumerName + "     " + cMsg.toString());
             enqueue(consumerName, outMsg);
-        } catch (JMSException e) {
-            CTLogger.getLogger(this.getClass()).warn(e.getMessage());
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
         }
     }
 
@@ -46,8 +50,11 @@ public class ProducerBean implements Producer {
         try {
             Queue consumerQueue = (Queue) ic.lookup(consumerName);
             myJMSContext.createProducer().send(consumerQueue, outMsg);
-        } catch (NamingException e) {
-            CTLogger.getLogger(this.getClass()).warn(e.getMessage());
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
         }
     }
 
@@ -57,12 +64,30 @@ public class ProducerBean implements Producer {
             CTLogger.getLogger(this.getClass()).info("Enqueue message to " + consumerName + "\n\n" + cMsg.toString());
             ObjectMessage outMsg = myJMSContext.createObjectMessage();
             outMsg.setObject(cMsg);
+            CTLogger.getLogger(this.getClass()).info("Prima di send");
             myJMSContext.createProducer().send(consumerName, outMsg);
+            CTLogger.getLogger(this.getClass()).info("EnqueueD message to " + consumerName + "\n\n" + cMsg.toString());
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
-            CTLogger.getLogger(this.getClass()).warn(sw.toString());
+            CTLogger.getLogger(this.getClass()).warn("Eccezione: " + sw.toString());
+        }
+    }
+
+    @Override
+    public void enqueue(String consumerName, CommunicationMessage cMsg, Destination replyTo) {
+        try {
+            ObjectMessage outMsg = myJMSContext.createObjectMessage();
+            outMsg.setJMSReplyTo(replyTo);
+            outMsg.setObject(cMsg);
+            CTLogger.getLogger(this.getClass()).info("invio un messaggio a " + consumerName + "     " + cMsg.toString());
+            enqueue(consumerName, outMsg);
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).warn("Eccezione: " + sw.toString());
         }
     }
 }

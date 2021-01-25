@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class AggregationRequest implements Serializable {
     private String type;
     private String destination;
-    private String operation;
+    private String operation;  //sum, avg, standard_deviation
     private String startDay; //format "dd/MM/yyyy"
     private String lastDay;  //format "dd/MM/yyyy"
 

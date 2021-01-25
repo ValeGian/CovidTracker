@@ -14,14 +14,14 @@ public class LiguriaRegionNode extends GenericRegionNode implements RegionLiguri
     @PostConstruct
     public void init(){
         try {
-            String myName = "liguria";
+            myName = "liguria";
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
             myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
 
             myKVManager = new KVManagerImpl(myName);
             myKVManager.deleteAllClientRequest();
 
-            myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
+            myMessageHandler.initializeParameters(myName, myDestinationName, myAreaDestinationName);
 
             setQueueConsumer(myDestinationName);
             startReceivingLoop();

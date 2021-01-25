@@ -16,22 +16,21 @@ import java.util.List;
 
 public class AreaConsumer  {
 
-    String myDestinationName;    //jms/northQueue
+    String myName;    //jms/northQueue
     List<String> myRegions;     //jms/valleAostaQueue
     boolean[] checkReceivedDailyReport;
     DailyReport[] receivedDailyReport;
     boolean waitingReport;
-    String myParent;   //jms/nationQueue
+    String myParent = "nation";
     KVManagerImpl myLog;
 
 
 
-    public AreaConsumer(KVManagerImpl myKVManager, String myDestinationName, List<String> myRegions, String myParent) {
-        this.myDestinationName = myDestinationName;
+    public AreaConsumer(KVManagerImpl myKVManager, String myName, List<String> myRegions) {
+        this.myName = myName;
         this.myRegions = myRegions;
         checkReceivedDailyReport = new boolean[myRegions.size()];
         receivedDailyReport = new DailyReport[myRegions.size()];
-        this.myParent = myParent;
         myLog = myKVManager;
     }
 
@@ -73,7 +72,6 @@ public class AreaConsumer  {
 
         CTLogger.getLogger(this.getClass()).info("entro in handleAggregationRequest");
 
-        CTLogger.getLogger(this.getClass()).info("MyDest: " + myDestinationName + "MyParent: " + myParent + "MyRegions: " + myRegions.get(1));
         Gson converter = new Gson();
         String senderName = cMsg.getSenderName();
         AggregationRequest aggregationRequested;
@@ -91,13 +89,16 @@ public class AreaConsumer  {
             aggregationRequested = converter.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
 
         String dest = aggregationRequested.getDestination();
+        CTLogger.getLogger(this.getClass()).info("Lo deve ricevere: " + dest);
+
+
         int index = myRegions.indexOf(dest);
 
 
         if (index != -1) { //se index non è -1 vuol dire che il destinatario è una delle mie regioni
             return new Pair<>(myRegions.get(index), cMsg); //ritorno
 
-        } else if (dest.equals(myDestinationName)) {  //diretto a me e rispondo io
+        } else if (dest.equals(myName)) {  //diretto a me e rispondo io
             return new Pair<>("mySelf", cMsg);
 
         } else {      //diretto a qualcun'altro
@@ -124,6 +125,7 @@ public class AreaConsumer  {
             for (int i = 0; i < myRegions.size(); i++) {
                 CommunicationMessage responseMessage = new CommunicationMessage();
                 responseMessage.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
+                responseMessage.setSenderName(myName);
                 closureRequests.add(new Pair<>(myRegions.get(i), responseMessage));
             }
             return closureRequests;

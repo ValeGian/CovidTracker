@@ -7,6 +7,7 @@ import org.iq80.leveldb.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -19,7 +20,7 @@ import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 
 public class KVManagerImpl implements KVManager {
     private static final long startingPoint = (long) 1000 * 60 * 60 * 24 * 365 * 50;
-    private static String fileName;
+    private String fileName;
 
     public KVManagerImpl(String myName) {
         System.out.println("CIAO");
@@ -41,10 +42,32 @@ public class KVManagerImpl implements KVManager {
         System.out.println("TROVATI: " + kv.getAllClientRequest());
         System.out.println("CIAO FINALE");
 
-
     }
 
-    private static DB openDB() {
+
+    public boolean addFake(DailyReport dailyReport){
+        try (DB db = openDB();
+             WriteBatch batch = db.createWriteBatch()) {
+
+            Date initialDate = new SimpleDateFormat("dd/MM/yyyy").parse("24/01/2021");
+
+            String startId = String.valueOf(initialDate.getTime() - startingPoint);
+
+
+            batch.put(bytes(startId + ":" + "swab"), bytes(String.valueOf(dailyReport.getTotalSwab())));
+            batch.put(bytes(startId + ":" + "positive"), bytes(String.valueOf(dailyReport.getTotalPositive())));
+            batch.put(bytes(startId + ":" + "negative"), bytes(String.valueOf(dailyReport.getTotalNegative())));
+            batch.put(bytes(startId + ":" + "dead"), bytes(String.valueOf(dailyReport.getTotalDead())));
+            db.write(batch);
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+
+    private DB openDB() {
         DB db = null;
         Options options = new Options();
         options.createIfMissing(true);
@@ -57,7 +80,7 @@ public class KVManagerImpl implements KVManager {
         }
     }
 
-    private static DB openClientRequestDB() {
+    private DB openClientRequestDB() {
         DB db = null;
         Options options = new Options();
         options.createIfMissing(true);
@@ -89,7 +112,6 @@ public class KVManagerImpl implements KVManager {
         }
         return true;
     }
-
 
     public List<Integer> getDailyReportsInAPeriod(String initialDateS, String finalDateS, String type) {
         List<Integer> searchedReports = new ArrayList<>();
@@ -160,6 +182,21 @@ public class KVManagerImpl implements KVManager {
             return result.get(0);
 
         return -1;
+    }
+
+    @Override
+    public void deleteDailyReport(String day, String type) {
+
+        try {
+            Date initialDate = new SimpleDateFormat("dd/MM/yyyy").parse(day);
+            String startId = String.valueOf(initialDate.getTime() - startingPoint);
+            try(DB db = openDB()){
+                db.delete(bytes(startId + ":" + type));
+            }
+        } catch (ParseException | IOException parseException) {
+            parseException.printStackTrace();
+        }
+
     }
 
     public void addClientRequest(String clientRequest){
@@ -234,5 +271,6 @@ public class KVManagerImpl implements KVManager {
 
         return listToString(clientRequest);
     }
+
 
 }

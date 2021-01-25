@@ -8,6 +8,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
+import it.unipi.dii.inginf.dsmt.covidtracker.persistence.JavaErlServicesClientImpl;
 import it.unipi.dii.inginf.dsmt.covidtracker.utility.NationConsumerHandlerImpl;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
@@ -52,7 +53,8 @@ public class NationNodeBean implements NationNode {
 
     @EJB private Producer myProducer;
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
-    @EJB private JavaErlServicesClient myErlangClient;
+
+    private JavaErlServicesClient myErlangClient = new JavaErlServicesClientImpl();
     private NationConsumerHandler myMessageHandler = new NationConsumerHandlerImpl();
     private final KVManager myKVManager = new KVManagerImpl(myName);
     private final Gson gson = new Gson();
@@ -72,7 +74,7 @@ public class NationNodeBean implements NationNode {
             try {
                 sendRegistryClosureRequests();
                 //waits for half an hour for responses from its children, then closes its own daily registry
-                timeoutHandle = scheduler.schedule(timeout, 60 * 30, TimeUnit.SECONDS);
+                timeoutHandle = scheduler.schedule(timeout, 80 , TimeUnit.SECONDS);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -141,12 +143,13 @@ public class NationNodeBean implements NationNode {
                 switch (cMsg.getMessageType()) {
                     case AGGREGATION_REQUEST:
                         Pair<String, CommunicationMessage> messageToSend = myMessageHandler.handleAggregationRequest(cMsg);
+                        CTLogger.getLogger(getClass()).info("sono nella handleAggregation del nation" + messageToSend);
                         if(messageToSend.getKey().equals(myName))
                             handleAggregation((ObjectMessage) msg);
                         else if(messageToSend.getKey().equals("flood"))
                             floodMessageToAreas((ObjectMessage) msg);
                         else
-                            myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue());
+                            myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue(), msg.getJMSReplyTo());
                         break;
 
                     case DAILY_REPORT:
@@ -157,7 +160,8 @@ public class NationNodeBean implements NationNode {
                         break;
                 }
             } catch (final JMSException | ParseException | IOException e) {
-                throw new RuntimeException(e);
+                CTLogger.getLogger(this.getClass()).warn("Eccezione: " + e + " message " + e.getMessage());
+
             }
         }
     }
@@ -202,7 +206,7 @@ public class NationNodeBean implements NationNode {
     private void sendRegistryClosureRequests() {
         CommunicationMessage regClosureMsg = new CommunicationMessage();
         regClosureMsg.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
-        regClosureMsg.setSenderName(myDestinationName);
+        regClosureMsg.setSenderName(myName);
 
         for(String childDestinationName: myChildrenDestinationNames) {
                 myProducer.enqueue(childDestinationName, regClosureMsg);
@@ -229,16 +233,19 @@ public class NationNodeBean implements NationNode {
                 result = myKVManager.getAggregation(request);
                 if (result == -1.0) {
                     try {
+                        CTLogger.getLogger(this.getClass()).info("prima di quello che da problemi");
+                        CTLogger.getLogger(this.getClass()).info(myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType()));
                         result = myErlangClient.computeAggregation(
                                 request.getOperation(),
                                 myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
+                        CTLogger.getLogger(this.getClass()).info("stampo il risultato " + result);
                         myKVManager.saveAggregation(request, result);
                     } catch (Exception e) {
                         StringWriter sw = new StringWriter();
                         PrintWriter pw = new PrintWriter(sw);
                         e.printStackTrace(pw);
-                        CTLogger.getLogger(this.getClass()).warn(sw.toString());
+                        CTLogger.getLogger(this.getClass()).warn("Eccezione: " + sw.toString());
                         result = 0.0;
                     }
                 }
@@ -247,13 +254,15 @@ public class NationNodeBean implements NationNode {
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
 
-            // send the reply directly to te requester
+            CTLogger.getLogger(this.getClass()).info("sono in fondo alla handleAggregation prima di invia il messaggio");
+            CTLogger.getLogger(this.getClass()).info("loggo: " + msg.getJMSReplyTo() + " outMsg " + outMsg);
+                    // send the reply directly to te requester
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
-            CTLogger.getLogger(this.getClass()).warn(sw.toString());
+            CTLogger.getLogger(this.getClass()).warn("Eccezione: " + sw.toString());
         }
     }
 

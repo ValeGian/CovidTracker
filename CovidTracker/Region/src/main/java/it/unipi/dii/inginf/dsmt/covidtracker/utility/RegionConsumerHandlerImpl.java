@@ -13,13 +13,15 @@ import javax.ejb.Stateful;
 public class RegionConsumerHandlerImpl implements RegionConsumerHandler {
 
     String myName;
-    String myParent;
+    String myDestinationName;
+    String myAreaDestinationName;
     CommunicationMessage myCommunicationMessage = new CommunicationMessage();
 
     @Override
-    public void initializeParameters(String myName, String parent) {
+    public void initializeParameters(String myName, String myDestinationName, String myAreaDestinationName) {
         this.myName = myName;
-        myParent = parent;
+        this.myDestinationName = myDestinationName;
+        this.myAreaDestinationName = myAreaDestinationName;
         myCommunicationMessage.setSenderName(myName);
     }
 
@@ -33,9 +35,7 @@ public class RegionConsumerHandlerImpl implements RegionConsumerHandler {
             return new Pair<>(cMsg.getSenderName(), myCommunicationMessage);
         }
         else { //altrimenti preparo un messaggio da inoltrare alla mia regione
-            myCommunicationMessage.setMessageType(MessageType.AGGREGATION_REQUEST);
-            myCommunicationMessage.setMessageBody(gson.toJson(aggregationRequest));
-            return new Pair<>(myParent, myCommunicationMessage);
+            return new Pair<>(myAreaDestinationName, cMsg);
         }
     }
 

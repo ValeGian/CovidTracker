@@ -14,12 +14,12 @@ public class ValleDAostaRegionNode extends GenericRegionNode implements RegionVa
     @PostConstruct
     public void init(){
         try {
-            String myName = "valledaosta";
+            myName = "valledaosta";
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
             myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
             myKVManager = new KVManagerImpl(myName);
             myKVManager.deleteAllClientRequest();
-            myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
+            myMessageHandler.initializeParameters(myName, myDestinationName, myAreaDestinationName);
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
         } catch (ParseException | IOException e) {

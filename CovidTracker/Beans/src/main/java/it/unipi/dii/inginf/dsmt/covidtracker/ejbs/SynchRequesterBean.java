@@ -49,7 +49,7 @@ public class SynchRequesterBean implements SynchRequester {
             CTLogger.getLogger(this.getClass()).info("requestAndReceiveAggregation NULL");
             return null;
         }
-
+      
         CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) inMsg).getObject();
         CTLogger.getLogger(this.getClass()).info("requestAndReceiveAggregation NOT NULL: " + cMsg.toString());
         return gson.fromJson(cMsg.getMessageBody(), AggregationResponse.class);
@@ -67,6 +67,6 @@ public class SynchRequesterBean implements SynchRequester {
         outMsg.setJMSReplyTo(tmpQueue);
         Queue consumerQueue = (Queue)ic.lookup(consumerName);
         myJMSContext.createProducer().send(consumerQueue, outMsg);
-        return myJMSContext.createConsumer(tmpQueue).receive(10000);  // receive with a 1 second timeout
+        return myJMSContext.createConsumer(tmpQueue).receive(30000);  // receive with a 30 seconds timeout
     }
 }
