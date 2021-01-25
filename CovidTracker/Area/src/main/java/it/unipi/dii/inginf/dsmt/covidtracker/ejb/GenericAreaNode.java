@@ -8,6 +8,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
+import it.unipi.dii.inginf.dsmt.covidtracker.persistence.JavaErlServicesClientImpl;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
@@ -45,7 +46,7 @@ public class GenericAreaNode {
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     @EJB private Producer myProducer;
-    @EJB private JavaErlServicesClient myErlangClient;
+    private JavaErlServicesClient myErlangClient = new JavaErlServicesClientImpl();
     @EJB protected HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
     //private ScheduledFuture<?> timeoutHandle = null;
@@ -117,7 +118,7 @@ public class GenericAreaNode {
                                 myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSendL.getKey()), messageToSendL.getValue());
                                 CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSendL.getKey());
                             }
-                        scheduler.schedule(timeout, 60 * 25, TimeUnit.SECONDS);
+                        scheduler.schedule(timeout, 60 , TimeUnit.SECONDS);
                         break;
 
                     case AGGREGATION_REQUEST:
@@ -125,7 +126,7 @@ public class GenericAreaNode {
                         CTLogger.getLogger(this.getClass()).info("MESSAGGIO DOPO CONSUMER: " + messageToSend);
                         if (messageToSend != null) {
                             if (!messageToSend.getKey().equals("mySelf")) {
-                                myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue());
+                                myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue(), msg.getJMSReplyTo());
                                 CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSend.getKey());
                             }else {
                                 CTLogger.getLogger(this.getClass()).info("gestisco aggregazione");
@@ -214,7 +215,6 @@ public class GenericAreaNode {
             CTLogger.getLogger(this.getClass()).info("lo sto inviando a: " + msg.getJMSReplyTo());
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
-            msg.setObject(outMsg);
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (JMSException e) {
             StringWriter sw = new StringWriter();

@@ -8,6 +8,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
+import it.unipi.dii.inginf.dsmt.covidtracker.persistence.JavaErlServicesClientImpl;
 import it.unipi.dii.inginf.dsmt.covidtracker.utility.NationConsumerHandlerImpl;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
@@ -52,7 +53,8 @@ public class NationNodeBean implements NationNode {
 
     @EJB private Producer myProducer;
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
-    @EJB private JavaErlServicesClient myErlangClient;
+
+    private JavaErlServicesClient myErlangClient = new JavaErlServicesClientImpl();
     private NationConsumerHandler myMessageHandler = new NationConsumerHandlerImpl();
     private final KVManager myKVManager = new KVManagerImpl(myName);
     private final Gson gson = new Gson();
@@ -72,7 +74,7 @@ public class NationNodeBean implements NationNode {
             try {
                 sendRegistryClosureRequests();
                 //waits for half an hour for responses from its children, then closes its own daily registry
-                timeoutHandle = scheduler.schedule(timeout, 60 * 30, TimeUnit.SECONDS);
+                timeoutHandle = scheduler.schedule(timeout, 80 , TimeUnit.SECONDS);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -147,7 +149,7 @@ public class NationNodeBean implements NationNode {
                         else if(messageToSend.getKey().equals("flood"))
                             floodMessageToAreas((ObjectMessage) msg);
                         else
-                            myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue());
+                            myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue(), msg.getJMSReplyTo());
                         break;
 
                     case DAILY_REPORT:
@@ -204,7 +206,7 @@ public class NationNodeBean implements NationNode {
     private void sendRegistryClosureRequests() {
         CommunicationMessage regClosureMsg = new CommunicationMessage();
         regClosureMsg.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
-        regClosureMsg.setSenderName(myDestinationName);
+        regClosureMsg.setSenderName(myName);
 
         for(String childDestinationName: myChildrenDestinationNames) {
                 myProducer.enqueue(childDestinationName, regClosureMsg);

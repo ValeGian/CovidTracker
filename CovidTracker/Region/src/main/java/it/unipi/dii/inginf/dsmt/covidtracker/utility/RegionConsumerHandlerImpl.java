@@ -35,9 +35,7 @@ public class RegionConsumerHandlerImpl implements RegionConsumerHandler {
             return new Pair<>(cMsg.getSenderName(), myCommunicationMessage);
         }
         else { //altrimenti preparo un messaggio da inoltrare alla mia regione
-            myCommunicationMessage.setMessageType(MessageType.AGGREGATION_REQUEST);
-            myCommunicationMessage.setMessageBody(gson.toJson(aggregationRequest));
-            return new Pair<>(myAreaDestinationName, myCommunicationMessage);
+            return new Pair<>(myAreaDestinationName, cMsg);
         }
     }
 

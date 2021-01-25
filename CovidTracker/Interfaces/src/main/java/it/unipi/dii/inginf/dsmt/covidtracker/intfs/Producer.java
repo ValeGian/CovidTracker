@@ -12,5 +12,6 @@ public interface Producer {
     void enqueue(final String consumerName, final CommunicationMessage cMsg);
     void enqueue(final String consumerName, final Message outMsg);
     void enqueue(final Destination consumerName, final CommunicationMessage cMsg);
+    void enqueue(final String consumerName, final CommunicationMessage cMsg, final Destination replyTo);
 
 }

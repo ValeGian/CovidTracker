@@ -49,6 +49,7 @@ public class RegionServlet extends HttpServlet {
             try {
                 regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
 
+
                 out.println("<HTML> <HEAD> <TITLE> Covid Tracker </TITLE> </HEAD> <BODY BGCOLOR=white>");
                 out.println("<CENTER> <FONT size=+4> Region page sending requests to " + region.substring(0, 1).toUpperCase() + region.substring(1) + "</FONT> </CENTER> <br> <p> ");
 
@@ -150,10 +151,12 @@ public class RegionServlet extends HttpServlet {
 
                         SimpleDateFormat dt = new SimpleDateFormat("yyyyy-mm-dd");
                         SimpleDateFormat dt1 = new SimpleDateFormat("dd/mm/yyyy");
+
                         if(startDate != null && !startDate.equals("")) {
                             Date startDateF = dt.parse(startDate);
                             startDate = dt1.format(startDateF);
-                        }else if(endDate != null && !endDate.equals("")) {
+                        }
+                        if(endDate != null && !endDate.equals("")) {
                             Date endDateF = dt.parse(endDate);
                             endDate = dt1.format(endDateF);
                         }

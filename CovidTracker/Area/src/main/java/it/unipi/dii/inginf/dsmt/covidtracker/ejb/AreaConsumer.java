@@ -125,6 +125,7 @@ public class AreaConsumer  {
             for (int i = 0; i < myRegions.size(); i++) {
                 CommunicationMessage responseMessage = new CommunicationMessage();
                 responseMessage.setMessageType(MessageType.REGISTRY_CLOSURE_REQUEST);
+                responseMessage.setSenderName(myName);
                 closureRequests.add(new Pair<>(myRegions.get(i), responseMessage));
             }
             return closureRequests;

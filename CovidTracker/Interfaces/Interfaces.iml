@@ -12,6 +12,7 @@
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: clojang:erlang-jinterface:1.10-1" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: javax.enterprise:cdi-api:2.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: javax.el:javax.el-api:3.0.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: javax.interceptor:javax.interceptor-api:1.2" level="project" />
