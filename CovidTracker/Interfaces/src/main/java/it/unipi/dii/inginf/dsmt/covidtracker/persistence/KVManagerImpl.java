@@ -163,8 +163,8 @@ public class KVManagerImpl implements KVManager {
     }
 
     @Override
-    public double deleteDailyReport(String day, String type) {
-        return 0;
+    public void deleteDailyReport(String day, String type) {
+
     }
 
     public void addClientRequest(String clientRequest){
