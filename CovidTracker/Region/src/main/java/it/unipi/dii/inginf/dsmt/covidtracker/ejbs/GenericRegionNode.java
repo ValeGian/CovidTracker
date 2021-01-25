@@ -151,6 +151,7 @@ public class GenericRegionNode{
         dailyReport.addTotalNegative((int)numNegative);
         dailyReport.addTotalDead((int)numDead);
 
+        deleteDailyReport(currentDate);
         myKVManager.addDailyReport(dailyReport);
 
         CommunicationMessage outMsg = new CommunicationMessage();
@@ -217,14 +218,11 @@ public class GenericRegionNode{
         String currentDate = getCurrentDate();
         DailyReport dailyReport = new DailyReport();
         double numSwab = myKVManager.getDailyReport(currentDate, "swab");
-        myKVManager.deleteDailyReport(currentDate, "swab");
         double numPositive = myKVManager.getDailyReport(currentDate, "positive");
-        myKVManager.deleteDailyReport(currentDate, "positive");
         double numNegative = myKVManager.getDailyReport(currentDate, "negative");
-        myKVManager.deleteDailyReport(currentDate, "negative");
         double numDead = myKVManager.getDailyReport(currentDate, "dead");
-        myKVManager.deleteDailyReport(currentDate, "dead");
 
+        deleteDailyReport(currentDate);
 
         if (numSwab == -1) numSwab = 0;
         if (numPositive == -1) numPositive = 0;
@@ -246,6 +244,14 @@ public class GenericRegionNode{
         dailyReport.addTotalDead((int)numDead);
 
         myKVManager.addDailyReport(dailyReport);
+    }
+
+    private void deleteDailyReport(String day){
+        myKVManager.deleteDailyReport(day, "swab");
+        myKVManager.deleteDailyReport(day, "positive");
+        myKVManager.deleteDailyReport(day, "negative");
+        myKVManager.deleteDailyReport(day, "dead");
+
     }
 
     private String getCurrentDate(){
