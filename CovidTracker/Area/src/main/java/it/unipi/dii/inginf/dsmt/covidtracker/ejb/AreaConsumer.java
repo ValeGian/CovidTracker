@@ -21,7 +21,7 @@ public class AreaConsumer  {
     boolean[] checkReceivedDailyReport;
     DailyReport[] receivedDailyReport;
     boolean waitingReport;
-    String myParent = "jms/nationQueue";
+    String myParent = "nation";
     KVManagerImpl myLog;
 
 
@@ -71,8 +71,6 @@ public class AreaConsumer  {
     public Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg) {
 
         CTLogger.getLogger(this.getClass()).info("entro in handleAggregationRequest");
-
-        CTLogger.getLogger(this.getClass()).info("MyDest: " + myName + " MyParent: " + myParent + " MyRegions: " + myRegions.get(1));
 
         Gson converter = new Gson();
         String senderName = cMsg.getSenderName();

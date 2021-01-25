@@ -22,6 +22,7 @@ public class RegionServerServlet extends HttpServlet {
 
     @EJB RegionValleDAosta regionValleDAosta;
     @EJB RegionPiemonte regionPiemonte;
+    /*
     @EJB RegionLiguria regionLiguria;
     @EJB RegionLombardia regionLombardia;
     @EJB RegionTrentinoAltoAdige regionTrentinoAltoAdige;
@@ -40,6 +41,8 @@ public class RegionServerServlet extends HttpServlet {
     @EJB RegionCalabria regionCalabria;
     @EJB RegionSicilia regionSicilia;
     @EJB RegionSardegna regionSardegna;
+
+     */
 
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
         HttpSession session = req.getSession(true);
@@ -79,6 +82,7 @@ public class RegionServerServlet extends HttpServlet {
                 return regionValleDAosta;
             case "piemonte":
                 return regionPiemonte;
+           /*
             case "liguria":
                 return regionLiguria;
             case "lombardia":
@@ -115,6 +119,8 @@ public class RegionServerServlet extends HttpServlet {
                 return regionSicilia;
             case "sardegna":
                 return regionSardegna;
+
+            */
         }
         return null;
     }

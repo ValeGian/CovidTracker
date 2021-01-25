@@ -36,6 +36,9 @@ public class JavaErlServicesClientBean implements JavaErlServicesClient {
     @Override
     public double computeAggregation(String operation, List<Integer> reports) {
 
+        if(reports.size() == 0)
+            return 0.0;
+
         OtpErlangTuple reqMsg = new OtpErlangTuple(new OtpErlangObject[]{this.mbox.self(), javaListToErl(reports), new OtpErlangAtom(operation)});
 
         //sending out the request

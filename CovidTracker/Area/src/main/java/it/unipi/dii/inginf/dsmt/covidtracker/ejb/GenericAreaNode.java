@@ -23,6 +23,8 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 
 import java.util.concurrent.ScheduledFuture;
@@ -80,10 +82,15 @@ public class GenericAreaNode {
             public void run() {
                 try {
                     while (!Thread.currentThread().isInterrupted()) {
+                        CTLogger.getLogger(this.getClass()).info("MI METTO IN ASCOLTO (AREA)");
                         Message inMsg = myQueueConsumer.receive();
+                        CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) inMsg).getObject();
+
+                        CTLogger.getLogger(this.getClass()).info("Ho ricevuto " + cMsg.toString());
                         handleMessage(inMsg);
                     }
                 } catch (Exception e) {
+                    CTLogger.getLogger(this.getClass()).info("ENTRO IN ECCEZIONE" + e.getMessage() + "SPERO MEGLIO " + e);
                     e.printStackTrace();
                 }
             }
@@ -115,12 +122,13 @@ public class GenericAreaNode {
 
                     case AGGREGATION_REQUEST:
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
+                        CTLogger.getLogger(this.getClass()).info("MESSAGGIO DOPO CONSUMER: " + messageToSend);
                         if (messageToSend != null) {
                             if (!messageToSend.getKey().equals("mySelf")) {
                                 myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue());
                                 CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSend.getKey());
                             }else {
-                                CTLogger.getLogger(this.getClass()).info("gestisco aggragazione");
+                                CTLogger.getLogger(this.getClass()).info("gestisco aggregazione");
                                 handleAggregation((ObjectMessage) msg);
                             }
                         }
@@ -165,7 +173,7 @@ public class GenericAreaNode {
             outMsg.setSenderName(myDestinationName);
             AggregationResponse response = new AggregationResponse(request);
 
-            if (request.getStartDay() == request.getLastDay()) {
+            if (request.getStartDay().equals(request.getLastDay())) {
                 result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
 
             } else {
@@ -183,8 +191,6 @@ public class GenericAreaNode {
                             stop = true;
                         }
 
-                        CTLogger.getLogger(this.getClass()).info("entro nel giusto");
-                        CTLogger.getLogger(this.getClass()).info("ALL INFO: " + myKVManager.getAllInfo());
 
                         CTLogger.getLogger(this.getClass()).info(myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType()).get(1));
 
@@ -196,7 +202,10 @@ public class GenericAreaNode {
                         myKVManager.saveAggregation(request, result);
                         CTLogger.getLogger(this.getClass()).info("salvo il risultato");
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        e.printStackTrace(pw);
+                        CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
                         result = 0.0;
                     }
                 }
@@ -208,7 +217,10 @@ public class GenericAreaNode {
             msg.setObject(outMsg);
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (JMSException e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
         }
     }
 

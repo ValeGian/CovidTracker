@@ -75,7 +75,7 @@ public class GenericRegionNode{
                         handleMessage(inMsg);
                     }
                 } catch (Exception e) {
-                    CTLogger.getLogger(this.getClass()).error("startReceivingLoop - eccezione: " + e);
+                    CTLogger.getLogger(this.getClass()).error("startReceivingLoop - eccezione: " + e.getMessage());
                     e.printStackTrace();
                 }
             }

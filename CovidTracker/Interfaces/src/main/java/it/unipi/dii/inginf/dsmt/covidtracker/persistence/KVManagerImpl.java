@@ -3,7 +3,6 @@ package it.unipi.dii.inginf.dsmt.covidtracker.persistence;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.KVManager;
-import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import org.iq80.leveldb.*;
 
 import java.io.File;
@@ -202,7 +201,6 @@ public class KVManagerImpl implements KVManager {
 
     public void addClientRequest(String clientRequest){
 
-        CTLogger.getLogger(this.getClass()).error("sono la add del kv di " + fileName);
         long millisecond = ZonedDateTime.now().toInstant().toEpochMilli() - startingPoint;
 
         try (DB db = openClientRequestDB()){
@@ -214,7 +212,6 @@ public class KVManagerImpl implements KVManager {
 
     public String getAllClientRequest() {
 
-        CTLogger.getLogger(this.getClass()).error("sono la get del kv di " + fileName);
         List<String> clientRequest = new ArrayList<>();
 
         try (DB db = openClientRequestDB(); DBIterator iterator = db.iterator()) {

@@ -23,6 +23,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
@@ -45,7 +47,6 @@ public class RegionServlet extends HttpServlet {
         String region = (String) session.getAttribute("region");
         if(region != null) {
             try {
-                //regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
                 regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
 
                 out.println("<HTML> <HEAD> <TITLE> Covid Tracker </TITLE> </HEAD> <BODY BGCOLOR=white>");
@@ -147,8 +148,21 @@ public class RegionServlet extends HttpServlet {
                         String startDate = req.getParameter("start_date");
                         String endDate = req.getParameter("end_date");
 
-                        if((startDate == null || startDate.equals("")) && (endDate == null || endDate.equals("")))
+                        SimpleDateFormat dt = new SimpleDateFormat("yyyyy-mm-dd");
+                        SimpleDateFormat dt1 = new SimpleDateFormat("dd/mm/yyyy");
+                        if(startDate != null && !startDate.equals("")) {
+                            Date startDateF = dt.parse(startDate);
+                            startDate = dt1.format(startDateF);
+                        }else if(endDate != null && !endDate.equals("")) {
+                            Date endDateF = dt.parse(endDate);
+                            endDate = dt1.format(endDateF);
+                        }
+
+
+                        if((startDate == null || startDate.equals("")) && (endDate == null || endDate.equals(""))) {
+                            CTLogger.getLogger(this.getClass()).info("log");
                             throw new Exception();
+                        }
                         else if(startDate == null || startDate.equals(""))
                             startDate = endDate;
                         else if(endDate == null || endDate.equals(""))
