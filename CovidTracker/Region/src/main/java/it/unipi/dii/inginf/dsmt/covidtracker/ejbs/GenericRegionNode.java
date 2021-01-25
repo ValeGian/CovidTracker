@@ -37,8 +37,7 @@ public class GenericRegionNode{
     private Map<String, List<DataLog>> dataLogs = new HashMap<>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
     //and the value is the list of logs received in that day
 
-    private boolean initialized = false;
-    private boolean registryOpened;
+    protected String myName;
     protected String myDestinationName;
     protected String myAreaDestinationName;
 
@@ -119,11 +118,10 @@ public class GenericRegionNode{
     // --------------------------------------------------------
 
     private void closeRegister(String destination){
-        if (registryOpened){
-            registryOpened = false;
-            DailyReport dailyReport = new DailyReport();
+        DailyReport dailyReport = new DailyReport();
 
-            for (DataLog dataLog : dataLogs.get(getCurrentDate())){
+        if (dataLogs.get(getCurrentDate()) != null) {
+            for (DataLog dataLog : dataLogs.get(getCurrentDate())) {
                 if (dataLog.getType().equals("swab"))
                     dailyReport.addTotalSwab(dataLog.getQuantity());
                 if (dataLog.getType().equals("positive"))
@@ -133,14 +131,14 @@ public class GenericRegionNode{
                 if (dataLog.getType().equals("dead"))
                     dailyReport.addTotalDead(dataLog.getQuantity());
             }
-
-            myKVManager.addDailyReport(dailyReport);
-
-            CommunicationMessage outMsg = new CommunicationMessage();
-            outMsg.setMessageType(MessageType.DAILY_REPORT);
-            outMsg.setMessageBody(gson.toJson(dailyReport));
-            myProducer.enqueue(destination, outMsg);
         }
+        myKVManager.addDailyReport(dailyReport);
+
+        CommunicationMessage outMsg = new CommunicationMessage();
+        outMsg.setSenderName(myName);
+        outMsg.setMessageType(MessageType.DAILY_REPORT);
+        outMsg.setMessageBody(gson.toJson(dailyReport));
+        myProducer.enqueue(destination, outMsg);
     }
 
     private void handleAggregation(ObjectMessage msg){
@@ -183,13 +181,10 @@ public class GenericRegionNode{
     }
 
     private void saveDataLog(DataLog dataLog){
-        if (registryOpened) {
-            String currentDate = getCurrentDate();
-            dataLogs.get(currentDate);
-            if (dataLogs.get(currentDate) == null)
-                dataLogs.put(currentDate, new ArrayList<DataLog>());
-            dataLogs.get(currentDate).add(dataLog);
-        }
+        String currentDate = getCurrentDate();
+        if (dataLogs.get(currentDate) == null)
+            dataLogs.put(currentDate, new ArrayList<DataLog>());
+        dataLogs.get(currentDate).add(dataLog);
     }
 
     private String getCurrentDate(){

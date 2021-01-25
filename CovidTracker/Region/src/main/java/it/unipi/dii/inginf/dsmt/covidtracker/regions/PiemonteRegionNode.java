@@ -21,7 +21,7 @@ public class PiemonteRegionNode extends GenericRegionNode implements RegionPiemo
             myKVManager = new KVManagerImpl(myName);
             myKVManager.deleteAllClientRequest();
 
-            myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
+            myMessageHandler.initializeParameters(myName, myDestinationName, myAreaDestinationName);
 
             setQueueConsumer(myDestinationName);
             startReceivingLoop();

@@ -7,6 +7,6 @@ import javax.ejb.Local;
 
 @Local
 public interface RegionConsumerHandler {
-    void initializeParameters(String name, String parent);
+    void initializeParameters(String myName, String myDestinationName, String myAreaDestinationName);
     Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg);
 }
