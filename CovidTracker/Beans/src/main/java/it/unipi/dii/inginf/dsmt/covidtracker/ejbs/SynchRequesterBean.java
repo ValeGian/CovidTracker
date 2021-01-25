@@ -13,6 +13,8 @@ import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 @Stateless(name = "SynchRequesterEJB")
 public class SynchRequesterBean implements SynchRequester {
@@ -31,8 +33,11 @@ public class SynchRequesterBean implements SynchRequester {
             myJMSContext = qcf.createContext();
             tmpQueue = myJMSContext.createTemporaryQueue();
         }
-        catch (NamingException e) {
-            CTLogger.getLogger(this.getClass()).info(e.getMessage());
+        catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
         }
     }
 
