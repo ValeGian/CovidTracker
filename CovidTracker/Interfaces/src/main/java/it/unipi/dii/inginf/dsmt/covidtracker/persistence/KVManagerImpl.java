@@ -272,6 +272,7 @@ public class KVManagerImpl implements KVManager {
         }
     }
 
+    @Override
     public String getAllInfo() {
 
         List<String> clientRequest = new ArrayList<>();
