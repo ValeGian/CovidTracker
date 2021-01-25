@@ -162,6 +162,11 @@ public class KVManagerImpl implements KVManager {
         return -1;
     }
 
+    @Override
+    public void deleteDailyReport(String day, String type) {
+
+    }
+
     public void addClientRequest(String clientRequest){
 
         long millisecond = ZonedDateTime.now().toInstant().toEpochMilli() - startingPoint;
