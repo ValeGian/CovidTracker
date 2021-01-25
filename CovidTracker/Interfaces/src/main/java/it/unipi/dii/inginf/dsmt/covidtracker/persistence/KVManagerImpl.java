@@ -7,6 +7,7 @@ import org.iq80.leveldb.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -164,6 +165,16 @@ public class KVManagerImpl implements KVManager {
 
     @Override
     public void deleteDailyReport(String day, String type) {
+
+        try {
+            Date initialDate = new SimpleDateFormat("dd/MM/yyyy").parse(day);
+            String startId = String.valueOf(initialDate.getTime() - startingPoint);
+            try(DB db = openDB()){
+                db.delete(bytes(startId + ":" + type));
+            }
+        } catch (ParseException | IOException parseException) {
+            parseException.printStackTrace();
+        }
 
     }
 
