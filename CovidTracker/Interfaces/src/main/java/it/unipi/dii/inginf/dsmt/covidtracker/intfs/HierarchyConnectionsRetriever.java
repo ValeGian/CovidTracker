@@ -23,4 +23,6 @@ public interface HierarchyConnectionsRetriever {
 
     List<String> getAllNames() throws IOException, ParseException;
 
+    List<String> getChildrenNames(final String parentName) throws IOException, ParseException;
+
 }

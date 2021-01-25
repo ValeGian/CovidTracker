@@ -90,9 +90,8 @@ public class HierarchyConnectionsRetrieverBean implements HierarchyConnectionsRe
         return names;
     }
 
-    //------------------------------------------------------------------------------------------------------------------
-
-    private List<String> getChildrenNames(String parentName) throws IOException, ParseException {
+    @Override
+    public List<String> getChildrenNames(final String parentName) throws IOException, ParseException {
         List<String> childrenNames = new ArrayList<>();
         JSONArray childrenList = (JSONArray) getJsonObject().get(parentName+"Children");
         for (int i = 0; i < childrenList.size(); i++) {

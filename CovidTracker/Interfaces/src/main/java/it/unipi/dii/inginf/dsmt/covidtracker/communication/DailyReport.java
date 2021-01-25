@@ -8,15 +8,15 @@ public class DailyReport implements Serializable {
     private int totalNegative;
     private int totalDead;
 
-    public int getTotalSwab() {
-        return totalSwab;
-    }
-
     public void addAll(DailyReport reportToAggregate){
         this.totalSwab += reportToAggregate.totalSwab;
         this.totalPositive += reportToAggregate.totalPositive;
         this.totalNegative += reportToAggregate.totalNegative;
         this.totalDead += reportToAggregate.totalDead;
+    }
+
+    public int getTotalSwab() {
+        return totalSwab;
     }
 
     public void addTotalSwab(int totalSwab) {

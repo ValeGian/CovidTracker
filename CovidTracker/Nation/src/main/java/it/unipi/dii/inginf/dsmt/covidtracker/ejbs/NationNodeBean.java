@@ -7,6 +7,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import it.unipi.dii.inginf.dsmt.covidtracker.utility.NationConsumerHandlerImpl;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
@@ -102,7 +103,7 @@ public class NationNodeBean implements NationNode {
             myChildrenDestinationNames = myHierarchyConnectionsRetriever.getChildrenDestinationName(myName);
 
             setQueueConsumer(myDestinationName);
-            myMessageHandler.initializeParameters(myDestinationName, myChildrenDestinationNames);
+            myMessageHandler.initializeParameters(myName, myHierarchyConnectionsRetriever.getChildrenNames(myName));
             myKVManager.deleteAllClientRequest();
 
             restartDailyThread();
@@ -138,7 +139,7 @@ public class NationNodeBean implements NationNode {
                 switch (cMsg.getMessageType()) {
                     case AGGREGATION_REQUEST:
                         Pair<String, CommunicationMessage> messageToSend = myMessageHandler.handleAggregationRequest(cMsg);
-                        if(messageToSend.getKey().equals(myDestinationName))
+                        if(messageToSend.getKey().equals(myName))
                             handleAggregation((ObjectMessage) msg);
                         else if(messageToSend.getKey().equals("flood"))
                             floodMessageToAreas((ObjectMessage) msg);
@@ -214,11 +215,13 @@ public class NationNodeBean implements NationNode {
 
             CommunicationMessage outMsg = new CommunicationMessage();
             outMsg.setMessageType(MessageType.AGGREGATION_RESPONSE);
-            outMsg.setSenderName(myDestinationName);
+            outMsg.setSenderName(myName);
             AggregationResponse response = new AggregationResponse(request);
 
-            if (request.getStartDay() == request.getLastDay()) {
+            if (request.getStartDay().equals(request.getLastDay())) {
                 result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
+                if(result == -1.0)
+                    result = 0.0;
 
             } else {
                 result = myKVManager.getAggregation(request);
@@ -238,10 +241,11 @@ public class NationNodeBean implements NationNode {
 
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
-            msg.setObject(outMsg);
-            myProducer.enqueue(cMsg.getSenderName(), msg);
+
+            // send the reply directly to te requester
+            myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (JMSException e) {
-            e.printStackTrace();
+            CTLogger.getLogger(this.getClass()).info(e.getMessage());
         }
     }
 
