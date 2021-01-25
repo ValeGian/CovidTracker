@@ -11,7 +11,7 @@ import java.util.List;
 
 public class NationConsumerHandlerImpl implements NationConsumerHandler {
 
-    String myDestinationName;
+    String myName;
     List<String> childrenAreas;
     boolean[] isReceivedDailyReport;
     DailyReport[] receivedDailyReport;
@@ -22,7 +22,7 @@ public class NationConsumerHandlerImpl implements NationConsumerHandler {
 
     @Override
     public void initializeParameters(String nodeName, List<String> childrenAreas) {
-        myDestinationName = nodeName;
+        myName = nodeName;
         this.childrenAreas = childrenAreas;
         isReceivedDailyReport = new boolean[childrenAreas.size()];
         receivedDailyReport = new DailyReport[childrenAreas.size()];
@@ -61,8 +61,8 @@ public class NationConsumerHandlerImpl implements NationConsumerHandler {
         if(index != -1) {
             return new Pair<>(childrenAreas.get(index), cMsg);
 
-        } else if(dest.equals(myDestinationName)) {
-            return new Pair<>(myDestinationName, cMsg);
+        } else if(dest.equals(myName)) {
+            return new Pair<>(myName, cMsg);
 
         } else
             return new Pair<>("flood", cMsg);

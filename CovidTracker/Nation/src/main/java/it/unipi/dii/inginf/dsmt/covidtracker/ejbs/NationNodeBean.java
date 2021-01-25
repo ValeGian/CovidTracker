@@ -144,7 +144,7 @@ public class NationNodeBean implements NationNode {
                         else if(messageToSend.getKey().equals("flood"))
                             floodMessageToAreas((ObjectMessage) msg);
                         else
-                            myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
+                            myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue());
                         break;
 
                     case DAILY_REPORT:
@@ -154,7 +154,7 @@ public class NationNodeBean implements NationNode {
                     default:
                         break;
                 }
-            } catch (final JMSException e) {
+            } catch (final JMSException | ParseException | IOException e) {
                 throw new RuntimeException(e);
             }
         }
