@@ -1,9 +1,7 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.areaInterfaces.AreaNode;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionNode;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionPiemonte;
-import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionValleDAosta;
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 
 import javax.ejb.EJB;
@@ -24,7 +22,24 @@ public class RegionServerServlet extends HttpServlet {
 
     @EJB RegionValleDAosta regionValleDAosta;
     @EJB RegionPiemonte regionPiemonte;
-
+    @EJB RegionLiguria regionLiguria;
+    @EJB RegionLombardia regionLombardia;
+    @EJB RegionTrentinoAltoAdige regionTrentinoAltoAdige;
+    @EJB RegionVeneto regionVeneto;
+    @EJB RegionFriuliVeneziaGiulia regionFriuliVeneziaGiulia;
+    @EJB RegionEmiliaRomagna regionEmiliaRomagna;
+    @EJB RegionToscana regionToscana;
+    @EJB RegionUmbria regionUmbria;
+    @EJB RegionMarche regionMarche;
+    @EJB RegionLazio regionLazio;
+    @EJB RegionAbruzzo regionAbruzzo;
+    @EJB RegionMolise regionMolise;
+    @EJB RegionCampania regionCampania;
+    @EJB RegionPuglia regionPuglia;
+    @EJB RegionBasilicata regionBasilicata;
+    @EJB RegionCalabria regionCalabria;
+    @EJB RegionSicilia regionSicilia;
+    @EJB RegionSardegna regionSardegna;
 
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
         HttpSession session = req.getSession(true);
@@ -64,6 +79,42 @@ public class RegionServerServlet extends HttpServlet {
                 return regionValleDAosta;
             case "piemonte":
                 return regionPiemonte;
+            case "liguria":
+                return regionLiguria;
+            case "lombardia":
+                return regionLombardia;
+            case "trentinoaltoadige":
+                return regionTrentinoAltoAdige;
+            case "veneto":
+                return regionVeneto;
+            case "friuliveneziagiulia":
+                return regionFriuliVeneziaGiulia;
+            case "emilliaromagna":
+                return regionEmiliaRomagna;
+            case "toscana":
+                return regionToscana;
+            case "umbria":
+                return regionUmbria;
+            case "marche":
+                return regionMarche;
+            case "lazio":
+                return regionLazio;
+            case "abruzzo":
+                return regionAbruzzo;
+            case "molise":
+                return regionMolise;
+            case "campania":
+                return regionCampania;
+            case "puglia":
+                return regionPuglia;
+            case "basilicata":
+                return regionBasilicata;
+            case "calabria":
+                return regionCalabria;
+            case "sicilia":
+                return regionSicilia;
+            case "sardegna":
+                return regionSardegna;
         }
         return null;
     }
