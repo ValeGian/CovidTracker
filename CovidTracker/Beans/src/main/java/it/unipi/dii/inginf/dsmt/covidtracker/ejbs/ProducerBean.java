@@ -9,6 +9,8 @@ import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 @Stateless(name = "ProducerEJB")
 public class ProducerBean implements Producer {
@@ -52,11 +54,15 @@ public class ProducerBean implements Producer {
     @Override
     public void enqueue(final Destination consumerName, final CommunicationMessage cMsg) {
         try {
+            CTLogger.getLogger(this.getClass()).info("Enqueue message to " + consumerName + "\n\n" + cMsg.toString());
             ObjectMessage outMsg = myJMSContext.createObjectMessage();
             outMsg.setObject(cMsg);
             myJMSContext.createProducer().send(consumerName, outMsg);
-        } catch (JMSException e) {
-            CTLogger.getLogger(this.getClass()).warn(e.getMessage());
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).warn(sw.toString());
         }
     }
 }

@@ -22,6 +22,8 @@ import javax.enterprise.concurrent.ManagedScheduledExecutorService;
 import javax.jms.*;
 import javax.naming.*;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.IllegalStateException;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -232,8 +234,11 @@ public class NationNodeBean implements NationNode {
                                 myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
                         myKVManager.saveAggregation(request, result);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    } catch (Exception e) {
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        e.printStackTrace(pw);
+                        CTLogger.getLogger(this.getClass()).warn(sw.toString());
                         result = 0.0;
                     }
                 }
@@ -244,8 +249,11 @@ public class NationNodeBean implements NationNode {
 
             // send the reply directly to te requester
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
-        } catch (JMSException e) {
-            CTLogger.getLogger(this.getClass()).info(e.getMessage());
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).warn(sw.toString());
         }
     }
 
