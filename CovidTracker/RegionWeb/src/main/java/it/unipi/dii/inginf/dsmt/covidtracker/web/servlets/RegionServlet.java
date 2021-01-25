@@ -45,8 +45,8 @@ public class RegionServlet extends HttpServlet {
         String region = (String) session.getAttribute("region");
         if(region != null) {
             try {
-                //regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
-                regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(myHierarchyConnectionsRetriever.getNationName());
+                regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(region);
+                //regionQueueName = myHierarchyConnectionsRetriever.getMyDestinationName(myHierarchyConnectionsRetriever.getNationName());
 
                 out.println("<HTML> <HEAD> <TITLE> Covid Tracker </TITLE> </HEAD> <BODY BGCOLOR=white>");
                 out.println("<CENTER> <FONT size=+4> Region page sending requests to " + region.substring(0, 1).toUpperCase() + region.substring(1) + "</FONT> </CENTER> <br> <p> ");
@@ -133,6 +133,7 @@ public class RegionServlet extends HttpServlet {
                         outMsg.setSenderName("webapp");
                         outMsg.setMessageBody(new Gson().toJson(log));
 
+                        CTLogger.getLogger(this.getClass()).info("sto per enquare");
                         myProducer.enqueue(regionQueueName, outMsg);
 
                     } catch(Exception ex) {
