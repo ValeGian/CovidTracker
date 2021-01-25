@@ -21,7 +21,7 @@ public class LiguriaRegionNode extends GenericRegionNode implements RegionLiguri
             myKVManager = new KVManagerImpl(myName);
             myKVManager.deleteAllClientRequest();
 
-            myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
+            myMessageHandler.initializeParameters(myName, myDestinationName, myAreaDestinationName);
 
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
