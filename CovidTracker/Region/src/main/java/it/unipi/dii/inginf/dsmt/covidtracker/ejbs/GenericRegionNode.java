@@ -125,10 +125,23 @@ public class GenericRegionNode{
         DailyReport dailyReport = new DailyReport();
         String currentDate = getCurrentDate();
 
-        dailyReport.addTotalSwab((int)myKVManager.getDailyReport(currentDate, "swab"));
-        dailyReport.addTotalPositive((int)myKVManager.getDailyReport(currentDate, "positive"));
-        dailyReport.addTotalNegative((int)myKVManager.getDailyReport(currentDate, "negative"));
-        dailyReport.addTotalDead((int)myKVManager.getDailyReport(currentDate, "dead"));
+        double numSwab = myKVManager.getDailyReport(currentDate, "swab");
+        double numPositive = myKVManager.getDailyReport(currentDate, "positive");
+        double numNegative = myKVManager.getDailyReport(currentDate, "negative");
+        double numDead = myKVManager.getDailyReport(currentDate, "dead");
+
+
+        if (numSwab == -1) numSwab = 0;
+        if (numPositive == -1) numPositive = 0;
+        if (numNegative == -1) numNegative = 0;
+        if (numDead == -1) numDead = 0;
+
+        dailyReport.addTotalSwab((int)numSwab);
+        dailyReport.addTotalPositive((int)numPositive);
+        dailyReport.addTotalNegative((int)numNegative);
+        dailyReport.addTotalDead((int)numDead);
+
+        myKVManager.addDailyReport(dailyReport);
 
         CommunicationMessage outMsg = new CommunicationMessage();
         outMsg.setSenderName(myName);
@@ -197,8 +210,6 @@ public class GenericRegionNode{
         if (numPositive == -1) numPositive = 0;
         if (numNegative == -1) numNegative = 0;
         if (numDead == -1) numDead = 0;
-
-
 
         if (dataLog.getType().equals("swab"))
             numSwab += dataLog.getQuantity();
