@@ -59,6 +59,10 @@ public class GenericRegionNode{
         }
     }
 
+    public String get(){
+        return myName;
+    }
+
     public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
 
     protected void startReceivingLoop() {
@@ -131,7 +135,6 @@ public class GenericRegionNode{
         outMsg.setMessageType(MessageType.DAILY_REPORT);
         outMsg.setMessageBody(gson.toJson(dailyReport));
 
-        CTLogger.getLogger(this.getClass()).info(outMsg.toString());
         myProducer.enqueue(destination, outMsg);
     }
 
@@ -212,7 +215,6 @@ public class GenericRegionNode{
         dailyReport.addTotalDead((int)numDead);
 
         myKVManager.addDailyReport(dailyReport);
-        CTLogger.getLogger(this.getClass()).info("aggiunto log, situazione attuale: " + gson.toJson(dailyReport));
     }
 
     private String getCurrentDate(){

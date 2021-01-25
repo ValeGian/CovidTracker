@@ -14,7 +14,7 @@ public class LiguriaRegionNode extends GenericRegionNode implements RegionLiguri
     @PostConstruct
     public void init(){
         try {
-            String myName = "liguria";
+            myName = "liguria";
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
             myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
 

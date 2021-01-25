@@ -3,6 +3,7 @@ package it.unipi.dii.inginf.dsmt.covidtracker.persistence;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.KVManager;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import org.iq80.leveldb.*;
 
 import java.io.File;
@@ -20,7 +21,7 @@ import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 
 public class KVManagerImpl implements KVManager {
     private static final long startingPoint = (long) 1000 * 60 * 60 * 24 * 365 * 50;
-    private static String fileName;
+    private String fileName;
 
     public KVManagerImpl(String myName) {
         System.out.println("CIAO");
@@ -45,7 +46,7 @@ public class KVManagerImpl implements KVManager {
 
     }
 
-    private static DB openDB() {
+    private DB openDB() {
         DB db = null;
         Options options = new Options();
         options.createIfMissing(true);
@@ -58,7 +59,7 @@ public class KVManagerImpl implements KVManager {
         }
     }
 
-    private static DB openClientRequestDB() {
+    private DB openClientRequestDB() {
         DB db = null;
         Options options = new Options();
         options.createIfMissing(true);
@@ -90,7 +91,6 @@ public class KVManagerImpl implements KVManager {
         }
         return true;
     }
-
 
     public List<Integer> getDailyReportsInAPeriod(String initialDateS, String finalDateS, String type) {
         List<Integer> searchedReports = new ArrayList<>();
@@ -180,6 +180,7 @@ public class KVManagerImpl implements KVManager {
 
     public void addClientRequest(String clientRequest){
 
+        CTLogger.getLogger(this.getClass()).error("sono la add del kv di " + fileName);
         long millisecond = ZonedDateTime.now().toInstant().toEpochMilli() - startingPoint;
 
         try (DB db = openClientRequestDB()){
@@ -191,6 +192,7 @@ public class KVManagerImpl implements KVManager {
 
     public String getAllClientRequest() {
 
+        CTLogger.getLogger(this.getClass()).error("sono la get del kv di " + fileName);
         List<String> clientRequest = new ArrayList<>();
 
         try (DB db = openClientRequestDB(); DBIterator iterator = db.iterator()) {
