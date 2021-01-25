@@ -26,4 +26,6 @@ public interface KVManager {
     void deleteAllClientRequest();
 
     void populateDb(int bound);
+
+    String getAllInfo();
 }
