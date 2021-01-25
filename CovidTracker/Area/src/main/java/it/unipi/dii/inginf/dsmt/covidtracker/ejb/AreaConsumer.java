@@ -36,9 +36,6 @@ public class AreaConsumer  {
 
 
     public void handleDailyReport(CommunicationMessage cMsg) {
-
-        CTLogger.getLogger(this.getClass()).info("entro in handleDailyReport");
-
         String senderQueue = cMsg.getSenderName();
         String body = cMsg.getMessageBody();
         int index = myRegions.indexOf(senderQueue);
@@ -50,9 +47,6 @@ public class AreaConsumer  {
 
 
     public DailyReport getDailyReport() {
-
-        CTLogger.getLogger(this.getClass()).info("entro in getDailyReport");
-
         DailyReport responseReport = new DailyReport();
         waitingReport = false;
         for(int i = 0; i < checkReceivedDailyReport.length; i++) {
@@ -69,18 +63,13 @@ public class AreaConsumer  {
 
 
     public Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg) {
-
-        CTLogger.getLogger(this.getClass()).info("entro in handleAggregationRequest");
-
         Gson converter = new Gson();
         String senderName = cMsg.getSenderName();
         AggregationRequest aggregationRequested;
         boolean encapsulatedBool = false;
 
         if (senderName.equals(myParent)) {
-            CTLogger.getLogger(this.getClass()).info("entro quando lo invia il padre");
             CommunicationMessage encapsulated = converter.fromJson(cMsg.getMessageBody(), CommunicationMessage.class);
-            CTLogger.getLogger(this.getClass()).info("messaggio incapsulato: " + encapsulated.toString());
 
             aggregationRequested = converter.fromJson(encapsulated.getMessageBody(), AggregationRequest.class);
             encapsulatedBool = true;
@@ -89,11 +78,7 @@ public class AreaConsumer  {
             aggregationRequested = converter.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
 
         String dest = aggregationRequested.getDestination();
-        CTLogger.getLogger(this.getClass()).info("Lo deve ricevere: " + dest);
-
-
         int index = myRegions.indexOf(dest);
-
 
         if (index != -1) { //se index non è -1 vuol dire che il destinatario è una delle mie regioni
             return new Pair<>(myRegions.get(index), cMsg); //ritorno
@@ -103,10 +88,8 @@ public class AreaConsumer  {
 
         } else {      //diretto a qualcun'altro
             if (encapsulatedBool) { //flooding mismatch
-                CTLogger.getLogger(this.getClass()).info("Entro encapsulated");
                 return null;
             } else {
-                CTLogger.getLogger(this.getClass()).info("Entro in fondo");
                 return new Pair<>(myParent, cMsg); //inoltro a nazione
             }
         }
@@ -115,11 +98,7 @@ public class AreaConsumer  {
 
 
     public List<Pair<String, CommunicationMessage>> handleRegistryClosureRequest(CommunicationMessage cMsg) {
-        CTLogger.getLogger(this.getClass()).info("entro in handleRegistryClosureRequest");
-
         if(!waitingReport) {
-            CTLogger.getLogger(this.getClass()).info("entro in waiting");
-
             waitingReport = true;
             List<Pair<String, CommunicationMessage>> closureRequests = new ArrayList<>();
             for (int i = 0; i < myRegions.size(); i++) {

@@ -41,6 +41,8 @@ public class GenericAreaNode {
     @Resource(mappedName = "concurrent/__defaultManagedExecutorService")
     protected ManagedExecutorService executor;
 
+    private final static int DAILY_REPORT_TIMEOUT = 60;
+
     protected KVManagerImpl myKVManager;
 
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
@@ -49,7 +51,6 @@ public class GenericAreaNode {
     private JavaErlServicesClient myErlangClient = new JavaErlServicesClientImpl();
     @EJB protected HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
-    //private ScheduledFuture<?> timeoutHandle = null;
     protected AreaConsumer myConsumer;
 
     private final Runnable timeout = () -> saveDailyReport(myConsumer.getDailyReport());
@@ -83,16 +84,17 @@ public class GenericAreaNode {
             public void run() {
                 try {
                     while (!Thread.currentThread().isInterrupted()) {
-                        CTLogger.getLogger(this.getClass()).info("MI METTO IN ASCOLTO (AREA)");
                         Message inMsg = myQueueConsumer.receive();
                         CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) inMsg).getObject();
 
-                        CTLogger.getLogger(this.getClass()).info("Ho ricevuto " + cMsg.toString());
                         handleMessage(inMsg);
                     }
                 } catch (Exception e) {
-                    CTLogger.getLogger(this.getClass()).info("ENTRO IN ECCEZIONE" + e.getMessage() + "SPERO MEGLIO " + e);
-                    e.printStackTrace();
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    e.printStackTrace(pw);
+                    CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
+
                 }
             }
         };
@@ -116,20 +118,16 @@ public class GenericAreaNode {
                         if (returnList != null)
                             for (Pair<String, CommunicationMessage> messageToSendL : returnList) {
                                 myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSendL.getKey()), messageToSendL.getValue());
-                                CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSendL.getKey());
-                            }
-                        scheduler.schedule(timeout, 60 , TimeUnit.SECONDS);
+                                }
+                        scheduler.schedule(timeout, DAILY_REPORT_TIMEOUT, TimeUnit.SECONDS);
                         break;
 
                     case AGGREGATION_REQUEST:
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
-                        CTLogger.getLogger(this.getClass()).info("MESSAGGIO DOPO CONSUMER: " + messageToSend);
                         if (messageToSend != null) {
                             if (!messageToSend.getKey().equals("mySelf")) {
                                 myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue(), msg.getJMSReplyTo());
-                                CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSend.getKey());
                             }else {
-                                CTLogger.getLogger(this.getClass()).info("gestisco aggregazione");
                                 handleAggregation((ObjectMessage) msg);
                             }
                         }
@@ -161,12 +159,9 @@ public class GenericAreaNode {
 
     private void handleAggregation(ObjectMessage msg) {
         try {
-
-            CTLogger.getLogger(this.getClass()).info("entro in handle");
             CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
             AggregationRequest request = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
 
-            CTLogger.getLogger(getClass()).info(cMsg.getMessageBody());
             double result = 0.0;
 
             CommunicationMessage outMsg = new CommunicationMessage();
@@ -178,9 +173,7 @@ public class GenericAreaNode {
                 result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
 
             } else {
-                CTLogger.getLogger(this.getClass()).info("prima di cercare la request nel DB");
                 result = myKVManager.getAggregation(request);
-                CTLogger.getLogger(this.getClass()).info("stampo result del getAggregation (dovrebbe essere -1) " + result);
                 if (result == -1.0) {
                     try {
 
@@ -192,16 +185,11 @@ public class GenericAreaNode {
                             stop = true;
                         }
 
-
-                        CTLogger.getLogger(this.getClass()).info(myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType()).get(1));
-
                         result = myErlangClient.computeAggregation(
                                 request.getOperation(),
                                 myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
-                        CTLogger.getLogger(this.getClass()).info("stampo il risultato " + result);
                         myKVManager.saveAggregation(request, result);
-                        CTLogger.getLogger(this.getClass()).info("salvo il risultato");
                     } catch (IOException e) {
                         StringWriter sw = new StringWriter();
                         PrintWriter pw = new PrintWriter(sw);
@@ -211,8 +199,6 @@ public class GenericAreaNode {
                     }
                 }
             }
-            CTLogger.getLogger(this.getClass()).info("risultato che sto per inviare " + result);
-            CTLogger.getLogger(this.getClass()).info("lo sto inviando a: " + msg.getJMSReplyTo());
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
