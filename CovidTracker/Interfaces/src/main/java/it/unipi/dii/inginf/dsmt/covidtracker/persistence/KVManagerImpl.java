@@ -15,6 +15,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
+
 import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 
 
@@ -23,43 +25,55 @@ public class KVManagerImpl implements KVManager {
     private String fileName;
 
     public KVManagerImpl(String myName) {
-        System.out.println("CIAO");
         fileName = myName + "KVDb";
     }
 
     public static void main(String[] args){
         KVManagerImpl kv = new KVManagerImpl("prova");
-        System.out.println("CIAO");
-
-        kv.addClientRequest("prova");
-        kv.addClientRequest("prova1");
-        kv.addClientRequest("prova2");
-        kv.addClientRequest("prova3");
-        System.out.println("CIAO3");
-        //DailyReport r = new DailyReport();
-        //r.addTotalDead(3);
-        //kv.addDailyReport(r);
-        System.out.println("TROVATI: " + kv.getAllClientRequest());
-        System.out.println("CIAO FINALE");
+        kv.deleteAllInfo();
+        kv.populateDb(100);
+        System.out.println("STAMPO TUTTO:\n" + kv.getAllInfo());
 
     }
 
+    public void populateDb(int bound){
 
-    public boolean addFake(DailyReport dailyReport){
+        Random myRandom = new Random();
+        for(int i = 1; i <= 31; i++) {
+            DailyReport newDaily = new DailyReport();
+            newDaily.addTotalSwab(myRandom.nextInt(bound) + 50);
+            newDaily.addTotalNegative(myRandom.nextInt(bound) + 50);
+            newDaily.addTotalPositive(myRandom.nextInt(bound) + 50);
+            newDaily.addTotalDead(myRandom.nextInt(bound) + 50);
+
+            try {
+                Date dateToInsert;
+                if(i < 10)
+                    dateToInsert = new SimpleDateFormat("dd/MM/yyyy").parse("0" + i + "/01/2021");
+                else
+                    dateToInsert = new SimpleDateFormat("dd/MM/yyyy").parse(i + "/01/2021");
+                addFake(newDaily, dateToInsert);
+            } catch (ParseException parseException) {
+                parseException.printStackTrace();
+            }
+
+        }
+    }
+
+
+    public boolean addFake(DailyReport dailyReport, Date initialDate){
         try (DB db = openDB();
              WriteBatch batch = db.createWriteBatch()) {
 
-            Date initialDate = new SimpleDateFormat("dd/MM/yyyy").parse("24/01/2021");
 
             String startId = String.valueOf(initialDate.getTime() - startingPoint);
-
 
             batch.put(bytes(startId + ":" + "swab"), bytes(String.valueOf(dailyReport.getTotalSwab())));
             batch.put(bytes(startId + ":" + "positive"), bytes(String.valueOf(dailyReport.getTotalPositive())));
             batch.put(bytes(startId + ":" + "negative"), bytes(String.valueOf(dailyReport.getTotalNegative())));
             batch.put(bytes(startId + ":" + "dead"), bytes(String.valueOf(dailyReport.getTotalDead())));
             db.write(batch);
-        } catch (IOException | ParseException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
@@ -124,12 +138,14 @@ public class KVManagerImpl implements KVManager {
             String lastId = String.valueOf(finalDate.getTime() - startingPoint);
 
             try (DB db = openDB(); DBIterator iterator = db.iterator()) {
-                for (iterator.seek(bytes(startId)); iterator.hasNext(); iterator.next()) {
+                for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
                     String key = asString(iterator.peekNext().getKey());
                     String[] keySplit = key.split(":");
 
-                    if (!keySplit[1].equals(type))
+
+                    if (Long.parseLong(keySplit[0]) < Long.parseLong(startId) || !keySplit[1].equals(type))
                         continue;
+
 
                     if (Long.parseLong(keySplit[0]) > Long.parseLong(lastId))
                         break;
@@ -262,7 +278,7 @@ public class KVManagerImpl implements KVManager {
 
         try (DB db = openDB(); DBIterator iterator = db.iterator()) {
             for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
-                clientRequest.add(asString(iterator.peekNext().getValue()));
+                clientRequest.add("KEY: " + asString(iterator.peekNext().getKey()) + " VALUE: " + asString(iterator.peekNext().getValue()));
             }
         } catch(Exception e){
             e.printStackTrace();
