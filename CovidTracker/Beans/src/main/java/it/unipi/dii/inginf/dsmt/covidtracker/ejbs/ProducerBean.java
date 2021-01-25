@@ -2,6 +2,7 @@ package it.unipi.dii.inginf.dsmt.covidtracker.ejbs;
 
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 
 import javax.ejb.Stateless;
 import javax.jms.*;
@@ -23,8 +24,7 @@ public class ProducerBean implements Producer {
             myJMSContext = qcf.createContext();
         }
         catch (NamingException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
+            CTLogger.getLogger(this.getClass()).warn(e.getMessage());
         }
     }
 
@@ -35,21 +35,28 @@ public class ProducerBean implements Producer {
             outMsg.setObject(cMsg);
             enqueue(consumerName, outMsg);
         } catch (JMSException e) {
-            e.printStackTrace();
+            CTLogger.getLogger(this.getClass()).warn(e.getMessage());
         }
     }
 
     @Override
     public void enqueue(final String consumerName, final Message outMsg) {
         try {
-            if(consumerName.equals("tmp")) {
-                myJMSContext.createProducer().send(outMsg.getJMSReplyTo(), outMsg);
-            } else {
-                Queue consumerQueue = (Queue) ic.lookup(consumerName);
-                myJMSContext.createProducer().send(consumerQueue, outMsg);
-            }
-        } catch (NamingException | JMSException e) {
-            e.printStackTrace();
+            Queue consumerQueue = (Queue) ic.lookup(consumerName);
+            myJMSContext.createProducer().send(consumerQueue, outMsg);
+        } catch (NamingException e) {
+            CTLogger.getLogger(this.getClass()).warn(e.getMessage());
+        }
+    }
+
+    @Override
+    public void enqueue(final Destination consumerName, final CommunicationMessage cMsg) {
+        try {
+            ObjectMessage outMsg = myJMSContext.createObjectMessage();
+            outMsg.setObject(cMsg);
+            myJMSContext.createProducer().send(consumerName, outMsg);
+        } catch (JMSException e) {
+            CTLogger.getLogger(this.getClass()).warn(e.getMessage());
         }
     }
 }

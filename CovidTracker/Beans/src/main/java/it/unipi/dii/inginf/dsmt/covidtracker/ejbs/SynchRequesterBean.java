@@ -6,6 +6,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationResponse;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.SynchRequester;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 
 import javax.ejb.Stateless;
 import javax.jms.*;
@@ -31,8 +32,7 @@ public class SynchRequesterBean implements SynchRequester {
             tmpQueue = myJMSContext.createTemporaryQueue();
         }
         catch (NamingException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
+            CTLogger.getLogger(this.getClass()).info(e.getMessage());
         }
     }
 

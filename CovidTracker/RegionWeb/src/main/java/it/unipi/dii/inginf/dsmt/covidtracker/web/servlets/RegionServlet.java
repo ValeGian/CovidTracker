@@ -1,9 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationResponse;
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
-import it.unipi.dii.inginf.dsmt.covidtracker.communication.DataLog;
+import it.unipi.dii.inginf.dsmt.covidtracker.communication.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.HierarchyConnectionsRetriever;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Producer;
@@ -11,6 +8,8 @@ import it.unipi.dii.inginf.dsmt.covidtracker.intfs.Recorder;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.SynchRequester;
 
 import com.google.gson.Gson;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
+
 import javax.ejb.EJB;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -25,6 +24,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Random;
 
 @WebServlet(name = "RegionServlet", urlPatterns={"/region/*"})
 public class RegionServlet extends HttpServlet {
@@ -53,7 +53,7 @@ public class RegionServlet extends HttpServlet {
 
                 // LOG FORM
                 out.println("<h2>Log new data</h2>");
-                out.println("<form action=\"" + req.getContextPath() + regionPage + "\" method=\"GET\">");
+                out.println("<form action=\"" + req.getContextPath() + regionPage + "\" method=\"POST\">");
 
                 out.println("<label for=\"log_type\">Choose a log type:</label>");
                 out.println("<select name=\"log_type\" id=\"log_type\">");
@@ -73,7 +73,7 @@ public class RegionServlet extends HttpServlet {
 
                 // AGGREGATION REQUEST FORM
                 out.println("<h2>Request an aggregation</h2>");
-                out.println("<form action=\"" + req.getContextPath() + regionPage + "\" method=\"GET\">");
+                out.println("<form action=\"" + req.getContextPath() + regionPage + "\" method=\"POST\">");
 
                 out.println("<label for=\"aggr_dest\">Choose a region to connect:</label>");
                 out.println("<select name=\"aggr_dest\" id=\"aggr_dest\">");
@@ -167,8 +167,7 @@ public class RegionServlet extends HttpServlet {
                             out.println("<FONT size=+1 color=red>Not been able to deliver the aggregation request</FONT>");
                         } else {
                             recorderPerClient.addResponse(response);
-                            RequestDispatcher disp = getServletContext().getRequestDispatcher(regionPage);
-                            if (disp != null) disp.forward(req, resp);
+                            resp.sendRedirect(req.getContextPath() + regionPage);
                         }
                     } catch(Exception ex) {
                         ex.printStackTrace();
