@@ -11,6 +11,8 @@ public interface KVManager {
 
     double getDailyReport(String day, String type);
 
+    double deleteDailyReport(String day, String type);
+
     List<Integer> getDailyReportsInAPeriod(String initialDateS, String finalDateS, String type);
 
     double getAggregation(AggregationRequest aggregation);
