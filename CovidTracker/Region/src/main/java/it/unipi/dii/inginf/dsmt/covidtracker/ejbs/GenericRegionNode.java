@@ -119,25 +119,19 @@ public class GenericRegionNode{
 
     private void closeRegister(String destination){
         DailyReport dailyReport = new DailyReport();
+        String currentDate = getCurrentDate();
 
-        if (dataLogs.get(getCurrentDate()) != null) {
-            for (DataLog dataLog : dataLogs.get(getCurrentDate())) {
-                if (dataLog.getType().equals("swab"))
-                    dailyReport.addTotalSwab(dataLog.getQuantity());
-                if (dataLog.getType().equals("positive"))
-                    dailyReport.addTotalPositive(dataLog.getQuantity());
-                if (dataLog.getType().equals("negative"))
-                    dailyReport.addTotalNegative(dataLog.getQuantity());
-                if (dataLog.getType().equals("dead"))
-                    dailyReport.addTotalDead(dataLog.getQuantity());
-            }
-        }
-        myKVManager.addDailyReport(dailyReport);
+        dailyReport.addTotalSwab((int)myKVManager.getDailyReport(currentDate, "swab"));
+        dailyReport.addTotalPositive((int)myKVManager.getDailyReport(currentDate, "positive"));
+        dailyReport.addTotalNegative((int)myKVManager.getDailyReport(currentDate, "negative"));
+        dailyReport.addTotalDead((int)myKVManager.getDailyReport(currentDate, "dead"));
 
         CommunicationMessage outMsg = new CommunicationMessage();
         outMsg.setSenderName(myName);
         outMsg.setMessageType(MessageType.DAILY_REPORT);
         outMsg.setMessageBody(gson.toJson(dailyReport));
+
+        CTLogger.getLogger(this.getClass()).info(outMsg.toString());
         myProducer.enqueue(destination, outMsg);
     }
 
@@ -149,11 +143,13 @@ public class GenericRegionNode{
 
             CommunicationMessage outMsg = new CommunicationMessage();
             outMsg.setMessageType(MessageType.AGGREGATION_RESPONSE);
-            outMsg.setSenderName(myDestinationName);
+            outMsg.setSenderName(myName);
             AggregationResponse response = new AggregationResponse(request);
 
-            if (request.getStartDay() == request.getLastDay()) {
+            if (request.getStartDay().equals(request.getLastDay())) {
                 result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
+                if(result == -1.0)
+                    result = 0.0;
 
             } else {
                 result = myKVManager.getAggregation(request);
@@ -173,18 +169,50 @@ public class GenericRegionNode{
 
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
-            msg.setObject(outMsg);
-            myProducer.enqueue(cMsg.getSenderName(), msg);
+
+            // send the reply directly to te requester
+            myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (JMSException e) {
-            e.printStackTrace();
+            CTLogger.getLogger(this.getClass()).info(e.getMessage());
         }
     }
 
     private void saveDataLog(DataLog dataLog){
         String currentDate = getCurrentDate();
-        if (dataLogs.get(currentDate) == null)
-            dataLogs.put(currentDate, new ArrayList<DataLog>());
-        dataLogs.get(currentDate).add(dataLog);
+        DailyReport dailyReport = new DailyReport();
+        double numSwab = myKVManager.getDailyReport(currentDate, "swab");
+        myKVManager.deleteDailyReport(currentDate, "swab");
+        double numPositive = myKVManager.getDailyReport(currentDate, "positive");
+        myKVManager.deleteDailyReport(currentDate, "positive");
+        double numNegative = myKVManager.getDailyReport(currentDate, "negative");
+        myKVManager.deleteDailyReport(currentDate, "negative");
+        double numDead = myKVManager.getDailyReport(currentDate, "dead");
+        myKVManager.deleteDailyReport(currentDate, "dead");
+
+
+        if (numSwab == -1) numSwab = 0;
+        if (numPositive == -1) numPositive = 0;
+        if (numNegative == -1) numNegative = 0;
+        if (numDead == -1) numDead = 0;
+
+
+
+        if (dataLog.getType().equals("swab"))
+            numSwab += dataLog.getQuantity();
+        if (dataLog.getType().equals("positive"))
+            numPositive += dataLog.getQuantity();
+        if (dataLog.getType().equals("negative"))
+            numNegative += dataLog.getQuantity();
+        if (dataLog.getType().equals("dead"))
+            numDead += dataLog.getQuantity();
+
+        dailyReport.addTotalSwab((int)numSwab);
+        dailyReport.addTotalPositive((int)numPositive);
+        dailyReport.addTotalNegative((int)numNegative);
+        dailyReport.addTotalDead((int)numDead);
+
+        myKVManager.addDailyReport(dailyReport);
+        CTLogger.getLogger(this.getClass()).info("aggiunto log, situazione attuale: " + gson.toJson(dailyReport));
     }
 
     private String getCurrentDate(){
