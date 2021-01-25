@@ -245,7 +245,7 @@ public class NationNodeBean implements NationNode {
                         StringWriter sw = new StringWriter();
                         PrintWriter pw = new PrintWriter(sw);
                         e.printStackTrace(pw);
-                        CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
+                        CTLogger.getLogger(this.getClass()).warn("Eccezione: " + sw.toString());
                         result = 0.0;
                     }
                 }
@@ -262,7 +262,7 @@ public class NationNodeBean implements NationNode {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
-            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
+            CTLogger.getLogger(this.getClass()).warn("Eccezione: " + sw.toString());
         }
     }
 

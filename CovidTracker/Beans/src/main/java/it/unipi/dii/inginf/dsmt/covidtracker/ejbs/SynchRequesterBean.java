@@ -43,15 +43,15 @@ public class SynchRequesterBean implements SynchRequester {
         outMsg.setSenderName("tmp"); // handle "tmp" sender differently than others
         outMsg.setMessageBody(gson.toJson(requestMsg, AggregationRequest.class));
 
-        CTLogger.getLogger(this.getClass()).info("Prima di requestAndReceive " + outMsg.toString());
+        CTLogger.getLogger(this.getClass()).info("requestAndReceiveAggregation PRE");
         Message inMsg = requestAndReceive(consumerName, outMsg);
-
         if(inMsg == null) {
-            CTLogger.getLogger(this.getClass()).info("Dopo if (se null)");
+            CTLogger.getLogger(this.getClass()).info("requestAndReceiveAggregation NULL");
             return null;
         }
+      
         CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) inMsg).getObject();
-        CTLogger.getLogger(this.getClass()).info("oltre if (non null) " + cMsg.toString());
+        CTLogger.getLogger(this.getClass()).info("requestAndReceiveAggregation NOT NULL: " + cMsg.toString());
         return gson.fromJson(cMsg.getMessageBody(), AggregationResponse.class);
     }
 
@@ -67,6 +67,6 @@ public class SynchRequesterBean implements SynchRequester {
         outMsg.setJMSReplyTo(tmpQueue);
         Queue consumerQueue = (Queue)ic.lookup(consumerName);
         myJMSContext.createProducer().send(consumerQueue, outMsg);
-        return myJMSContext.createConsumer(tmpQueue).receive(20000);  // receive with a 1 second timeout
+        return myJMSContext.createConsumer(tmpQueue).receive(30000);  // receive with a 30 seconds timeout
     }
 }
