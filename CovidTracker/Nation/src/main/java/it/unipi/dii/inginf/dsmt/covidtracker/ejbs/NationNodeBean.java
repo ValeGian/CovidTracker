@@ -44,6 +44,8 @@ public class NationNodeBean implements NationNode {
 
     private ScheduledFuture<?> dailyReporterHandle = null;
     private ScheduledFuture<?> timeoutHandle = null;
+    private final static int DAILY_REPORT_TIMEOUT = 100;
+    private final static int DAILY_REPORT_PERIOD = 60*60*24;
 
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
@@ -74,7 +76,7 @@ public class NationNodeBean implements NationNode {
             try {
                 sendRegistryClosureRequests();
                 //waits for half an hour for responses from its children, then closes its own daily registry
-                timeoutHandle = scheduler.schedule(timeout, 80 , TimeUnit.SECONDS);
+                timeoutHandle = scheduler.schedule(timeout, DAILY_REPORT_TIMEOUT, TimeUnit.SECONDS);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -143,7 +145,6 @@ public class NationNodeBean implements NationNode {
                 switch (cMsg.getMessageType()) {
                     case AGGREGATION_REQUEST:
                         Pair<String, CommunicationMessage> messageToSend = myMessageHandler.handleAggregationRequest(cMsg);
-                        CTLogger.getLogger(getClass()).info("sono nella handleAggregation del nation" + messageToSend);
                         if(messageToSend.getKey().equals(myName))
                             handleAggregation((ObjectMessage) msg);
                         else if(messageToSend.getKey().equals("flood"))
@@ -159,9 +160,11 @@ public class NationNodeBean implements NationNode {
                     default:
                         break;
                 }
-            } catch (final JMSException | ParseException | IOException e) {
-                CTLogger.getLogger(this.getClass()).warn("Eccezione: " + e + " message " + e.getMessage());
-
+            } catch (Exception e) {
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
             }
         }
     }
@@ -176,7 +179,7 @@ public class NationNodeBean implements NationNode {
 
         //ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit)
         //Starts a thread which is scheduled to be executed each day at midnight
-        dailyReporterHandle = scheduler.scheduleAtFixedRate(dailyReporter, secondsUntilMidnight(), 60*60*24, TimeUnit.SECONDS);
+        dailyReporterHandle = scheduler.scheduleAtFixedRate(dailyReporter, secondsUntilMidnight(), DAILY_REPORT_PERIOD, TimeUnit.SECONDS);
     }
 
     private void startReceivingLoop() {
@@ -209,7 +212,7 @@ public class NationNodeBean implements NationNode {
         regClosureMsg.setSenderName(myName);
 
         for(String childDestinationName: myChildrenDestinationNames) {
-                myProducer.enqueue(childDestinationName, regClosureMsg);
+            myProducer.enqueue(childDestinationName, regClosureMsg);
         }
     }
 
@@ -233,13 +236,10 @@ public class NationNodeBean implements NationNode {
                 result = myKVManager.getAggregation(request);
                 if (result == -1.0) {
                     try {
-                        CTLogger.getLogger(this.getClass()).info("prima di quello che da problemi");
-                        CTLogger.getLogger(this.getClass()).info(myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType()));
                         result = myErlangClient.computeAggregation(
                                 request.getOperation(),
                                 myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
-                        CTLogger.getLogger(this.getClass()).info("stampo il risultato " + result);
                         myKVManager.saveAggregation(request, result);
                     } catch (Exception e) {
                         StringWriter sw = new StringWriter();
@@ -254,9 +254,7 @@ public class NationNodeBean implements NationNode {
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
 
-            CTLogger.getLogger(this.getClass()).info("sono in fondo alla handleAggregation prima di invia il messaggio");
-            CTLogger.getLogger(this.getClass()).info("loggo: " + msg.getJMSReplyTo() + " outMsg " + outMsg);
-                    // send the reply directly to te requester
+            // send the reply directly to te requester
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (Exception e) {
             StringWriter sw = new StringWriter();

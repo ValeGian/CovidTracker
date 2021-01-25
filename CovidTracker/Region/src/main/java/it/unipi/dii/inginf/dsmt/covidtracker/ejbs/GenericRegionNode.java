@@ -74,13 +74,13 @@ public class GenericRegionNode{
                 try {
                     while (!Thread.currentThread().isInterrupted()) {
                         Message inMsg = myQueueConsumer.receive();
-                        CTLogger.getLogger(this.getClass()).info("ricevuto (sono region)");
                         handleMessage(inMsg);
-                        CTLogger.getLogger(this.getClass()).info("dopo handleMessage (sono region)");
                     }
                 } catch (Exception e) {
-                    CTLogger.getLogger(this.getClass()).error("startReceivingLoop - eccezione: " + e.getMessage());
-                    e.printStackTrace();
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    e.printStackTrace(pw);
+                    CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
                 }
             }
         };
@@ -94,8 +94,6 @@ public class GenericRegionNode{
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
                 myKVManager.addClientRequest(cMsg.toString());
-                CTLogger.getLogger(this.getClass()).info(cMsg.toString());
-
                 Pair<String, CommunicationMessage> messageToSend;
 
                 switch (cMsg.getMessageType()) {
@@ -107,10 +105,8 @@ public class GenericRegionNode{
                     case AGGREGATION_REQUEST:
                         messageToSend = myMessageHandler.handleAggregationRequest(cMsg);
                         if (messageToSend.getValue().getMessageType() == MessageType.AGGREGATION_REQUEST) {
-                            CTLogger.getLogger(this.getClass()).info("prima enque giusta");
                             myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue(), msg.getJMSReplyTo());
-                            CTLogger.getLogger(this.getClass()).info("dopo enque giusta");
-                        }else
+                        } else
                             handleAggregation((ObjectMessage) msg);
                         break;
                     case NEW_DATA:
@@ -119,7 +115,7 @@ public class GenericRegionNode{
                     default:
                         break;
                 }
-            } catch (final Exception e) {
+            } catch (Exception e) {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
                 e.printStackTrace(pw);
@@ -134,7 +130,6 @@ public class GenericRegionNode{
         DailyReport dailyReport = new DailyReport();
         String currentDate = getCurrentDate();
 
-        CTLogger.getLogger(this.getClass()).info("entro nel close registry(region) mio padre: " + destination);
         double numSwab = myKVManager.getDailyReport(currentDate, "swab");
         double numPositive = myKVManager.getDailyReport(currentDate, "positive");
         double numNegative = myKVManager.getDailyReport(currentDate, "negative");
@@ -182,13 +177,10 @@ public class GenericRegionNode{
                 result = myKVManager.getAggregation(request);
                 if (result == -1.0) {
                     try {
-                        CTLogger.getLogger(this.getClass()).info("prima di quello che da problemi");
-                        CTLogger.getLogger(this.getClass()).info(myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType()));
                         result = myErlangClient.computeAggregation(
                                 request.getOperation(),
                                 myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
-                        CTLogger.getLogger(this.getClass()).info("stampo il risultato " + result);
                         myKVManager.saveAggregation(request, result);
                     } catch (Exception e) {
                         StringWriter sw = new StringWriter();
@@ -203,8 +195,6 @@ public class GenericRegionNode{
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
 
-            CTLogger.getLogger(this.getClass()).info("sono in fondo alla handleAggregation prima di invia il messaggio");
-            CTLogger.getLogger(this.getClass()).info("loggo: " + msg.getJMSReplyTo() + " outMsg " + outMsg);
             // send the reply directly to te requester
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (Exception e) {

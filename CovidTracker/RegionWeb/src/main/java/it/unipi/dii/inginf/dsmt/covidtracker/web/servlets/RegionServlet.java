@@ -163,7 +163,6 @@ public class RegionServlet extends HttpServlet {
 
 
                         if((startDate == null || startDate.equals("")) && (endDate == null || endDate.equals(""))) {
-                            CTLogger.getLogger(this.getClass()).info("log");
                             throw new Exception();
                         }
                         else if(startDate == null || startDate.equals(""))
