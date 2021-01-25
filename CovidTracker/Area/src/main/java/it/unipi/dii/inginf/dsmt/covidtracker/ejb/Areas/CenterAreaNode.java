@@ -15,10 +15,11 @@ public class CenterAreaNode extends GenericAreaNode implements AreaCenter {
     @PostConstruct
     public void init(){
         try {
-            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName("center");
-            myKVManager = new KVManagerImpl("center");
+            myName = "center";
+            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
+            myKVManager = new KVManagerImpl(myName);
             myKVManager.deleteAllClientRequest();
-            myConsumer = new AreaConsumer(myKVManager, "center", myHierarchyConnectionsRetriever.getChildrenNames("center"));
+            myConsumer = new AreaConsumer(myKVManager, myName, myHierarchyConnectionsRetriever.getChildrenNames(myName));
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
         } catch (IOException e) {

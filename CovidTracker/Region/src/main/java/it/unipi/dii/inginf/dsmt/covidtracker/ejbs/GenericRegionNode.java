@@ -61,10 +61,6 @@ public class GenericRegionNode{
         }
     }
 
-    public String get(){
-        return myName;
-    }
-
     public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
 
     protected void startReceivingLoop() {
@@ -154,6 +150,7 @@ public class GenericRegionNode{
         outMsg.setMessageType(MessageType.DAILY_REPORT);
         outMsg.setMessageBody(gson.toJson(dailyReport));
 
+        CTLogger.getLogger(this.getClass()).info("Sending " + myName + " Daily Report to " + destination + "\nReport: " + outMsg.toString());
         myProducer.enqueue(destination, outMsg);
     }
 
