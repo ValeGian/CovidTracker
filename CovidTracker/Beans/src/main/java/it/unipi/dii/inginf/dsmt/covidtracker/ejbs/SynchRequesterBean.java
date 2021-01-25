@@ -63,6 +63,6 @@ public class SynchRequesterBean implements SynchRequester {
         outMsg.setJMSReplyTo(tmpQueue);
         Queue consumerQueue = (Queue)ic.lookup(consumerName);
         myJMSContext.createProducer().send(consumerQueue, outMsg);
-        return myJMSContext.createConsumer(tmpQueue).receive(1000);  // receive with a 1 second timeout
+        return myJMSContext.createConsumer(tmpQueue).receive(5000);  // receive with a 1 second timeout
     }
 }

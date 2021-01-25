@@ -43,8 +43,30 @@ public class KVManagerImpl implements KVManager {
         System.out.println("TROVATI: " + kv.getAllClientRequest());
         System.out.println("CIAO FINALE");
 
-
     }
+
+
+    public boolean addFake(DailyReport dailyReport){
+        try (DB db = openDB();
+             WriteBatch batch = db.createWriteBatch()) {
+
+            Date initialDate = new SimpleDateFormat("dd/MM/yyyy").parse("24/01/2021");
+
+            String startId = String.valueOf(initialDate.getTime() - startingPoint);
+
+
+            batch.put(bytes(startId + ":" + "swab"), bytes(String.valueOf(dailyReport.getTotalSwab())));
+            batch.put(bytes(startId + ":" + "positive"), bytes(String.valueOf(dailyReport.getTotalPositive())));
+            batch.put(bytes(startId + ":" + "negative"), bytes(String.valueOf(dailyReport.getTotalNegative())));
+            batch.put(bytes(startId + ":" + "dead"), bytes(String.valueOf(dailyReport.getTotalDead())));
+            db.write(batch);
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
 
     private DB openDB() {
         DB db = null;
@@ -252,5 +274,6 @@ public class KVManagerImpl implements KVManager {
 
         return listToString(clientRequest);
     }
+
 
 }
