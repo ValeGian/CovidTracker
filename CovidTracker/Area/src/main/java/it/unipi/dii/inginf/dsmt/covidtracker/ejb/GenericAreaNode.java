@@ -10,6 +10,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.intfs.*;
 import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
+import org.json.simple.parser.ParseException;
 
 import javax.annotation.Resource;
 import javax.ejb.EJB;
@@ -106,7 +107,7 @@ public class GenericAreaNode {
                         List<Pair<String, CommunicationMessage>> returnList = myConsumer.handleRegistryClosureRequest(cMsg);
                         if (returnList != null)
                             for (Pair<String, CommunicationMessage> messageToSendL : returnList) {
-                                myProducer.enqueue(messageToSendL.getKey(), messageToSendL.getValue());
+                                myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSendL.getKey()), messageToSendL.getValue());
                                 CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSendL.getKey());
                             }
                         scheduler.schedule(timeout, 60 * 25, TimeUnit.SECONDS);
@@ -116,7 +117,7 @@ public class GenericAreaNode {
                         messageToSend = myConsumer.handleAggregationRequest(cMsg);
                         if (messageToSend != null) {
                             if (!messageToSend.getKey().equals("mySelf")) {
-                                myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue());
+                                myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSend.getKey()), messageToSend.getValue());
                                 CTLogger.getLogger(this.getClass()).info("invio a:" + messageToSend.getKey());
                             }else {
                                 CTLogger.getLogger(this.getClass()).info("gestisco aggragazione");
@@ -137,15 +138,26 @@ public class GenericAreaNode {
 
             } catch (final JMSException e) {
                 throw new RuntimeException(e);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+
+
         }
+
     }
 
 
     private void handleAggregation(ObjectMessage msg) {
         try {
+
+            CTLogger.getLogger(this.getClass()).info("entro in handle");
             CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
             AggregationRequest request = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
+
+            CTLogger.getLogger(getClass()).info(cMsg.getMessageBody());
             double result = 0.0;
 
             CommunicationMessage outMsg = new CommunicationMessage();
@@ -157,25 +169,44 @@ public class GenericAreaNode {
                 result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
 
             } else {
+                CTLogger.getLogger(this.getClass()).info("prima di cercare la request nel DB");
                 result = myKVManager.getAggregation(request);
+                CTLogger.getLogger(this.getClass()).info("stampo result del getAggregation (dovrebbe essere -1) " + result);
                 if (result == -1.0) {
                     try {
+
+                        if(!stop){
+                            DailyReport d = new DailyReport(); d.addTotalSwab(100);
+                            DailyReport d1 = new DailyReport(); d1.addTotalSwab(100);
+                            myKVManager.addDailyReport(d);
+                            myKVManager.addFake(d1);
+                            stop = true;
+                        }
+
+                        CTLogger.getLogger(this.getClass()).info("entro nel giusto");
+                        CTLogger.getLogger(this.getClass()).info("ALL INFO: " + myKVManager.getAllInfo());
+
+                        CTLogger.getLogger(this.getClass()).info(myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType()).get(1));
+
                         result = myErlangClient.computeAggregation(
                                 request.getOperation(),
                                 myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
+                        CTLogger.getLogger(this.getClass()).info("stampo il risultato " + result);
                         myKVManager.saveAggregation(request, result);
+                        CTLogger.getLogger(this.getClass()).info("salvo il risultato");
                     } catch (IOException e) {
                         e.printStackTrace();
                         result = 0.0;
                     }
                 }
             }
-
+            CTLogger.getLogger(this.getClass()).info("risultato che sto per inviare " + result);
+            CTLogger.getLogger(this.getClass()).info("lo sto inviando a: " + msg.getJMSReplyTo());
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
             msg.setObject(outMsg);
-            myProducer.enqueue(cMsg.getSenderName(), msg);
+            myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (JMSException e) {
             e.printStackTrace();
         }

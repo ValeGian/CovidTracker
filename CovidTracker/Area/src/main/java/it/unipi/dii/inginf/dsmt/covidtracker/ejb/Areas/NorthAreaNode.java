@@ -19,7 +19,7 @@ public class NorthAreaNode extends GenericAreaNode implements AreaNorth {
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName("north");
             myKVManager = new KVManagerImpl("north");
             myKVManager.deleteAllClientRequest();
-            myConsumer = new AreaConsumer(myKVManager, myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName("north"), myHierarchyConnectionsRetriever.getParentDestinationName("north"));
+            myConsumer = new AreaConsumer(myKVManager, "north", myHierarchyConnectionsRetriever.getChildrenNames("north"));
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
         } catch (IOException e) {

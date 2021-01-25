@@ -18,7 +18,7 @@ public class SouthAreaNode extends GenericAreaNode implements AreaSouth {
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName("south");
             myKVManager = new KVManagerImpl("south");
             myKVManager.deleteAllClientRequest();
-            myConsumer = new AreaConsumer(myKVManager, myDestinationName, myHierarchyConnectionsRetriever.getChildrenDestinationName("south"), myHierarchyConnectionsRetriever.getParentDestinationName("south"));
+            myConsumer = new AreaConsumer(myKVManager, "south", myHierarchyConnectionsRetriever.getChildrenNames("south"));
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
         } catch (IOException e) {

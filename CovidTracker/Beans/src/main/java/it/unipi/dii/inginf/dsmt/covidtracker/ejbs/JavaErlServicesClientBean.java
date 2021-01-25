@@ -11,14 +11,12 @@ import java.util.Random;
 
 @Stateless(name = "JavaErlServicesClientEJB")
 public class JavaErlServicesClientBean implements JavaErlServicesClient {
-    private static final String avg_ServerNodeName = "avg_node@localhost";
-    private static final String avg_ServerRegisteredName = "avg_server";
 
-    private static final String sum_ServerNodeName = "sum_node@localhost";
-    private static final String sum_ServerRegisteredName = "sum_server";
+    private static final String serverNodeName = "aggregation_node@localhost";
 
-    private static final String standardDev_ServerNodeName = "standardDev_node@localhost";
-    private static final String standardDev_ServerRegisteredName = "standardDev_server";
+    private static final String serverRegisteredName = "aggregation_server";
+
+
     private static final String clientNodeName = "services_client_node@localhost";
     private static final String cookie = "";
     private final OtpNode clientNode;
@@ -35,46 +33,10 @@ public class JavaErlServicesClientBean implements JavaErlServicesClient {
         mbox = clientNode.createMbox("default_mbox");
     }
 
-    public static void main(String[] args){
-        JavaErlServicesClient serverProva = null;
-        try {
-            serverProva = new JavaErlServicesClientBean();
-
-
-            List<Integer> reportTry = new ArrayList<>();
-
-            reportTry.add(8);
-            reportTry.add(9);
-            reportTry.add(10);
-
-            System.out.println("RESULT:" + serverProva.computeAggregation("average", reportTry));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
     @Override
     public double computeAggregation(String operation, List<Integer> reports) {
-        //composing the request message
-        if(operation != null && reports.size() > 0){
 
-            if(operation.equals("sum"))
-                return contactServer(sum_ServerRegisteredName, sum_ServerNodeName, reports);
-
-            else if(operation.equals("average"))
-                return contactServer(avg_ServerRegisteredName, avg_ServerNodeName, reports);
-
-            else if(operation.equals("standard_devaition"))
-                return contactServer(standardDev_ServerRegisteredName, standardDev_ServerNodeName, reports);
-        }
-        return -1;
-    }
-
-
-    private double contactServer(String serverRegisteredName, String serverNodeName, List<Integer> reports) {
-
-        OtpErlangTuple reqMsg = new OtpErlangTuple(new OtpErlangObject[]{this.mbox.self(), javaListToErl(reports)});
+        OtpErlangTuple reqMsg = new OtpErlangTuple(new OtpErlangObject[]{this.mbox.self(), javaListToErl(reports), new OtpErlangAtom(operation)});
 
         //sending out the request
         mbox.send(serverRegisteredName, serverNodeName, reqMsg);
@@ -89,9 +51,14 @@ public class JavaErlServicesClientBean implements JavaErlServicesClient {
             e.printStackTrace();
         }
 
-        OtpErlangDouble curr_avg_erlang = (OtpErlangDouble) msg;  //it is supposed to be a double...
-        return curr_avg_erlang.doubleValue();
-
+        if(operation.equals("sum")) {
+            OtpErlangLong curr_avg_erlang = (OtpErlangLong) msg;  //it is supposed to be a double...
+            return curr_avg_erlang.longValue();
+        }
+        else {
+            OtpErlangDouble curr_avg_erlang = (OtpErlangDouble) msg;  //it is supposed to be a double...
+            return curr_avg_erlang.doubleValue();
+        }
     }
 
 
@@ -103,4 +70,5 @@ public class JavaErlServicesClientBean implements JavaErlServicesClient {
         }
         return new OtpErlangList(numlist);
     }
+
 }
