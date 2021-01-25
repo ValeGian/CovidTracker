@@ -37,8 +37,7 @@ public class GenericRegionNode{
     private Map<String, List<DataLog>> dataLogs = new HashMap<>(); //logs received from web servers, the key is the day of the dataLog (format dd/MM/yyyy)
     //and the value is the list of logs received in that day
 
-    private boolean initialized = false;
-    private boolean registryOpened;
+    protected String myName;
     protected String myDestinationName;
     protected String myAreaDestinationName;
 
@@ -58,6 +57,10 @@ public class GenericRegionNode{
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public String get(){
+        return myName;
     }
 
     public String readReceivedMessages() { return myKVManager.getAllClientRequest(); }
@@ -119,28 +122,20 @@ public class GenericRegionNode{
     // --------------------------------------------------------
 
     private void closeRegister(String destination){
-        if (registryOpened){
-            registryOpened = false;
-            DailyReport dailyReport = new DailyReport();
+        DailyReport dailyReport = new DailyReport();
+        String currentDate = getCurrentDate();
 
-            for (DataLog dataLog : dataLogs.get(getCurrentDate())){
-                if (dataLog.getType().equals("swab"))
-                    dailyReport.addTotalSwab(dataLog.getQuantity());
-                if (dataLog.getType().equals("positive"))
-                    dailyReport.addTotalPositive(dataLog.getQuantity());
-                if (dataLog.getType().equals("negative"))
-                    dailyReport.addTotalNegative(dataLog.getQuantity());
-                if (dataLog.getType().equals("dead"))
-                    dailyReport.addTotalDead(dataLog.getQuantity());
-            }
+        dailyReport.addTotalSwab((int)myKVManager.getDailyReport(currentDate, "swab"));
+        dailyReport.addTotalPositive((int)myKVManager.getDailyReport(currentDate, "positive"));
+        dailyReport.addTotalNegative((int)myKVManager.getDailyReport(currentDate, "negative"));
+        dailyReport.addTotalDead((int)myKVManager.getDailyReport(currentDate, "dead"));
 
-            myKVManager.addDailyReport(dailyReport);
+        CommunicationMessage outMsg = new CommunicationMessage();
+        outMsg.setSenderName(myName);
+        outMsg.setMessageType(MessageType.DAILY_REPORT);
+        outMsg.setMessageBody(gson.toJson(dailyReport));
 
-            CommunicationMessage outMsg = new CommunicationMessage();
-            outMsg.setMessageType(MessageType.DAILY_REPORT);
-            outMsg.setMessageBody(gson.toJson(dailyReport));
-            myProducer.enqueue(destination, outMsg);
-        }
+        myProducer.enqueue(destination, outMsg);
     }
 
     private void handleAggregation(ObjectMessage msg){
@@ -151,11 +146,13 @@ public class GenericRegionNode{
 
             CommunicationMessage outMsg = new CommunicationMessage();
             outMsg.setMessageType(MessageType.AGGREGATION_RESPONSE);
-            outMsg.setSenderName(myDestinationName);
+            outMsg.setSenderName(myName);
             AggregationResponse response = new AggregationResponse(request);
 
-            if (request.getStartDay() == request.getLastDay()) {
+            if (request.getStartDay().equals(request.getLastDay())) {
                 result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
+                if(result == -1.0)
+                    result = 0.0;
 
             } else {
                 result = myKVManager.getAggregation(request);
@@ -175,21 +172,49 @@ public class GenericRegionNode{
 
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
-            msg.setObject(outMsg);
-            myProducer.enqueue(cMsg.getSenderName(), msg);
+
+            // send the reply directly to te requester
+            myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (JMSException e) {
-            e.printStackTrace();
+            CTLogger.getLogger(this.getClass()).info(e.getMessage());
         }
     }
 
     private void saveDataLog(DataLog dataLog){
-        if (registryOpened) {
-            String currentDate = getCurrentDate();
-            dataLogs.get(currentDate);
-            if (dataLogs.get(currentDate) == null)
-                dataLogs.put(currentDate, new ArrayList<DataLog>());
-            dataLogs.get(currentDate).add(dataLog);
-        }
+        String currentDate = getCurrentDate();
+        DailyReport dailyReport = new DailyReport();
+        double numSwab = myKVManager.getDailyReport(currentDate, "swab");
+        myKVManager.deleteDailyReport(currentDate, "swab");
+        double numPositive = myKVManager.getDailyReport(currentDate, "positive");
+        myKVManager.deleteDailyReport(currentDate, "positive");
+        double numNegative = myKVManager.getDailyReport(currentDate, "negative");
+        myKVManager.deleteDailyReport(currentDate, "negative");
+        double numDead = myKVManager.getDailyReport(currentDate, "dead");
+        myKVManager.deleteDailyReport(currentDate, "dead");
+
+
+        if (numSwab == -1) numSwab = 0;
+        if (numPositive == -1) numPositive = 0;
+        if (numNegative == -1) numNegative = 0;
+        if (numDead == -1) numDead = 0;
+
+
+
+        if (dataLog.getType().equals("swab"))
+            numSwab += dataLog.getQuantity();
+        if (dataLog.getType().equals("positive"))
+            numPositive += dataLog.getQuantity();
+        if (dataLog.getType().equals("negative"))
+            numNegative += dataLog.getQuantity();
+        if (dataLog.getType().equals("dead"))
+            numDead += dataLog.getQuantity();
+
+        dailyReport.addTotalSwab((int)numSwab);
+        dailyReport.addTotalPositive((int)numPositive);
+        dailyReport.addTotalNegative((int)numNegative);
+        dailyReport.addTotalDead((int)numDead);
+
+        myKVManager.addDailyReport(dailyReport);
     }
 
     private String getCurrentDate(){

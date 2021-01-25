@@ -33,6 +33,7 @@ public class ProducerBean implements Producer {
         try {
             ObjectMessage outMsg = myJMSContext.createObjectMessage();
             outMsg.setObject(cMsg);
+            CTLogger.getLogger(this.getClass()).info("invio un messaggio a " + consumerName + "     " + cMsg.toString());
             enqueue(consumerName, outMsg);
         } catch (JMSException e) {
             CTLogger.getLogger(this.getClass()).warn(e.getMessage());

@@ -4,6 +4,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.intfs.areaInterfaces.AreaNode;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionNode;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionPiemonte;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.regionInterfaces.RegionValleDAosta;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 
 import javax.ejb.EJB;
 import javax.naming.Context;
@@ -19,7 +20,6 @@ import java.io.PrintWriter;
 
 @WebServlet(name = "RegionServerServlet", urlPatterns={"/server_region/*"})
 public class RegionServerServlet extends HttpServlet {
-    private static final String REGION_NODE_JNDI = "java:global/Region_ejb_exploded/RegionNodeEJB";
     private static final String regionPage = "/server_region/serverRegionUI.jsp";
 
     @EJB RegionValleDAosta regionValleDAosta;

@@ -14,14 +14,14 @@ public class PiemonteRegionNode extends GenericRegionNode implements RegionPiemo
     @PostConstruct
     public void init(){
         try {
-            String myName = "piemonte";
+            myName = "piemonte";
             myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
             myAreaDestinationName = myHierarchyConnectionsRetriever.getParentDestinationName(myName);
 
             myKVManager = new KVManagerImpl(myName);
             myKVManager.deleteAllClientRequest();
 
-            myMessageHandler.initializeParameters(myDestinationName, myAreaDestinationName);
+            myMessageHandler.initializeParameters(myName, myDestinationName, myAreaDestinationName);
 
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
