@@ -21,12 +21,9 @@ public class AreaServerServlet extends HttpServlet {
     private static final String areaPage = "/server_area/serverAreaUI.jsp";
 
     @EJB AreaNorth areaNorth;
-    /*
     @EJB AreaCenter areaCenter;
     @EJB AreaSouth areaSouth;
 
-
-     */
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(true);
         String server = (String) session.getAttribute("areaServer");
@@ -40,7 +37,6 @@ public class AreaServerServlet extends HttpServlet {
             try {
                 out.println("<HTML> <HEAD> <TITLE> Covid Tracker </TITLE> </HEAD> <BODY BGCOLOR=white>");
                 out.println("<CENTER> <FONT size=+4> Homepage for " + server.toUpperCase() + " Server </FONT> </CENTER> <br> <p> ");
-
 
                 out.println("<br><br>");
 
@@ -63,18 +59,14 @@ public class AreaServerServlet extends HttpServlet {
     }
 
     public AreaNode getArea(String ejb) {
-
         switch(ejb)
         {
             case "north":
                 return areaNorth;
-           /*
             case "center":
                 return areaCenter;
             case "south":
                 return areaSouth;
-
-            */
         }
         return null;
     }

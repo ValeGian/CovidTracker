@@ -6,6 +6,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.enums.MessageType;
 
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.KVManager;
 import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import it.unipi.dii.inginf.dsmt.covidtracker.persistence.KVManagerImpl;
 import javafx.util.Pair;
@@ -22,11 +23,9 @@ public class AreaConsumer  {
     DailyReport[] receivedDailyReport;
     boolean waitingReport;
     String myParent = "nation";
-    KVManagerImpl myLog;
+    KVManager myLog;
 
-
-
-    public AreaConsumer(KVManagerImpl myKVManager, String myName, List<String> myRegions) {
+    public AreaConsumer(KVManager myKVManager, String myName, List<String> myRegions) {
         this.myName = myName;
         this.myRegions = myRegions;
         checkReceivedDailyReport = new boolean[myRegions.size()];
@@ -55,9 +54,6 @@ public class AreaConsumer  {
                 responseReport.addAll(receivedDailyReport[i]);
             }
         }
-        DailyReport d = new DailyReport(); d.addTotalPositive(118);
-
-        responseReport.addAll(d);
         return responseReport;
     }
 
@@ -109,7 +105,6 @@ public class AreaConsumer  {
             }
             return closureRequests;
         }
-
         return null;
     }
 

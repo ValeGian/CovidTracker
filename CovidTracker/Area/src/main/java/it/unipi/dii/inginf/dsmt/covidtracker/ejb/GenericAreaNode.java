@@ -43,7 +43,7 @@ public class GenericAreaNode {
 
     private final static int DAILY_REPORT_TIMEOUT = 60;
 
-    protected KVManagerImpl myKVManager;
+    protected KVManager myKVManager;
 
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
@@ -53,10 +53,18 @@ public class GenericAreaNode {
 
     protected AreaConsumer myConsumer;
 
-    private final Runnable timeout = () -> saveDailyReport(myConsumer.getDailyReport());
+    private final Runnable timeout = new Runnable() {
+        @Override
+        public void run() {
+            DailyReport dailyReport = myConsumer.getDailyReport();
+            saveDailyReport(dailyReport);
+            sendDailyReportToParent(dailyReport);
+        }
+    };
 
-    boolean stop;
     private final Gson gson = new Gson();
+
+    protected String myName;
     protected String myDestinationName;
 
     private JMSConsumer myQueueConsumer;
@@ -85,8 +93,6 @@ public class GenericAreaNode {
                 try {
                     while (!Thread.currentThread().isInterrupted()) {
                         Message inMsg = myQueueConsumer.receive();
-                        CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) inMsg).getObject();
-
                         handleMessage(inMsg);
                     }
                 } catch (Exception e) {
@@ -103,7 +109,6 @@ public class GenericAreaNode {
 
 
     public void handleMessage(Message msg) {
-
         if (msg != null) {
             try {
                 CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) msg).getObject();
@@ -118,7 +123,8 @@ public class GenericAreaNode {
                         if (returnList != null)
                             for (Pair<String, CommunicationMessage> messageToSendL : returnList) {
                                 myProducer.enqueue(myHierarchyConnectionsRetriever.getMyDestinationName(messageToSendL.getKey()), messageToSendL.getValue());
-                                }
+                            }
+                        CTLogger.getLogger(this.getClass()).info("Sending Registry Closure Requests to Regions: \n" + returnList);
                         scheduler.schedule(timeout, DAILY_REPORT_TIMEOUT, TimeUnit.SECONDS);
                         break;
 
@@ -141,21 +147,14 @@ public class GenericAreaNode {
                         break;
                 }
 
-
-
-            } catch (final JMSException e) {
-                throw new RuntimeException(e);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
             }
-
-
         }
-
     }
-
 
     private void handleAggregation(ObjectMessage msg) {
         try {
@@ -176,21 +175,12 @@ public class GenericAreaNode {
                 result = myKVManager.getAggregation(request);
                 if (result == -1.0) {
                     try {
-
-                        if(!stop){
-                            DailyReport d = new DailyReport(); d.addTotalSwab(100);
-                            DailyReport d1 = new DailyReport(); d1.addTotalSwab(100);
-                            myKVManager.addDailyReport(d);
-                            myKVManager.addFake(d1);
-                            stop = true;
-                        }
-
                         result = myErlangClient.computeAggregation(
                                 request.getOperation(),
                                 myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
                         myKVManager.saveAggregation(request, result);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         StringWriter sw = new StringWriter();
                         PrintWriter pw = new PrintWriter(sw);
                         e.printStackTrace(pw);
@@ -202,7 +192,7 @@ public class GenericAreaNode {
             response.setResult(result);
             outMsg.setMessageBody(gson.toJson(response));
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
-        } catch (JMSException e) {
+        } catch (Exception e) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
@@ -210,5 +200,24 @@ public class GenericAreaNode {
         }
     }
 
-    private void saveDailyReport(DailyReport dailyReport) { myKVManager.addDailyReport(dailyReport); }
+    private void saveDailyReport(final DailyReport dailyReport) { myKVManager.addDailyReport(dailyReport); }
+
+    private void sendDailyReportToParent(final DailyReport dailyReport) {
+        try {
+            CommunicationMessage outMsg = new CommunicationMessage();
+            outMsg.setSenderName(myName);
+            outMsg.setMessageType(MessageType.DAILY_REPORT);
+            outMsg.setMessageBody(gson.toJson(dailyReport));
+
+            String parent = myHierarchyConnectionsRetriever.getMyDestinationName(myHierarchyConnectionsRetriever.getNationName());
+
+            CTLogger.getLogger(this.getClass()).info("Sending " + myName + " Daily Report to " + parent + "\nReport: " + outMsg.toString());
+            myProducer.enqueue(parent, outMsg);
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
+        }
+    }
 }

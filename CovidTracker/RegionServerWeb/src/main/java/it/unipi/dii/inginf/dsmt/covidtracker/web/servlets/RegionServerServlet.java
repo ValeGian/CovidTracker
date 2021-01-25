@@ -22,14 +22,14 @@ public class RegionServerServlet extends HttpServlet {
 
     @EJB RegionValleDAosta regionValleDAosta;
     @EJB RegionPiemonte regionPiemonte;
-    /*
-    @EJB RegionLiguria regionLiguria;
+    @EJB RegionToscana regionToscana;
+    @EJB RegionSicilia regionSicilia;
+    /*@EJB RegionLiguria regionLiguria;
     @EJB RegionLombardia regionLombardia;
     @EJB RegionTrentinoAltoAdige regionTrentinoAltoAdige;
     @EJB RegionVeneto regionVeneto;
     @EJB RegionFriuliVeneziaGiulia regionFriuliVeneziaGiulia;
     @EJB RegionEmiliaRomagna regionEmiliaRomagna;
-    @EJB RegionToscana regionToscana;
     @EJB RegionUmbria regionUmbria;
     @EJB RegionMarche regionMarche;
     @EJB RegionLazio regionLazio;
@@ -39,7 +39,6 @@ public class RegionServerServlet extends HttpServlet {
     @EJB RegionPuglia regionPuglia;
     @EJB RegionBasilicata regionBasilicata;
     @EJB RegionCalabria regionCalabria;
-    @EJB RegionSicilia regionSicilia;
     @EJB RegionSardegna regionSardegna;
 
      */
@@ -82,8 +81,11 @@ public class RegionServerServlet extends HttpServlet {
                 return regionValleDAosta;
             case "piemonte":
                 return regionPiemonte;
-           /*
-            case "liguria":
+            case "toscana":
+                return regionToscana;
+            case "sicilia":
+                return regionSicilia;
+            /*case "liguria":
                 return regionLiguria;
             case "lombardia":
                 return regionLombardia;
@@ -95,8 +97,6 @@ public class RegionServerServlet extends HttpServlet {
                 return regionFriuliVeneziaGiulia;
             case "emilliaromagna":
                 return regionEmiliaRomagna;
-            case "toscana":
-                return regionToscana;
             case "umbria":
                 return regionUmbria;
             case "marche":
@@ -115,12 +115,10 @@ public class RegionServerServlet extends HttpServlet {
                 return regionBasilicata;
             case "calabria":
                 return regionCalabria;
-            case "sicilia":
-                return regionSicilia;
             case "sardegna":
                 return regionSardegna;
 
-            */
+             */
         }
         return null;
     }

@@ -15,10 +15,11 @@ public class SouthAreaNode extends GenericAreaNode implements AreaSouth {
     @PostConstruct
     public void init(){
         try {
-            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName("south");
-            myKVManager = new KVManagerImpl("south");
+            myName = "south";
+            myDestinationName = myHierarchyConnectionsRetriever.getMyDestinationName(myName);
+            myKVManager = new KVManagerImpl(myName);
             myKVManager.deleteAllClientRequest();
-            myConsumer = new AreaConsumer(myKVManager, "south", myHierarchyConnectionsRetriever.getChildrenNames("south"));
+            myConsumer = new AreaConsumer(myKVManager, myName, myHierarchyConnectionsRetriever.getChildrenNames(myName));
             setQueueConsumer(myDestinationName);
             startReceivingLoop();
         } catch (IOException e) {

@@ -63,14 +63,14 @@ public class NationNodeBean implements NationNode {
 
     private JMSConsumer myQueueConsumer;
 
-    final Runnable timeout = new Runnable() {
+    private final Runnable timeout = new Runnable() {
         @Override
         public void run() {
             saveDailyReport(myMessageHandler.getDailyReport());
         }
     };
 
-    final Runnable dailyReporter = new Runnable() {
+    private final Runnable dailyReporter = new Runnable() {
         @Override
         public void run() {
             try {
@@ -78,7 +78,10 @@ public class NationNodeBean implements NationNode {
                 //waits for half an hour for responses from its children, then closes its own daily registry
                 timeoutHandle = scheduler.schedule(timeout, DAILY_REPORT_TIMEOUT, TimeUnit.SECONDS);
             } catch (Exception e) {
-                e.printStackTrace();
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
             }
         }
     };
@@ -92,7 +95,10 @@ public class NationNodeBean implements NationNode {
                     handleMessage(inMsg);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
             }
         }
     };
@@ -114,8 +120,11 @@ public class NationNodeBean implements NationNode {
 
             restartDailyThread();
             startReceivingLoop();
-        } catch (IOException | ParseException ex) {
-            throw new IllegalStateException(ex);
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
         }
     }
 
@@ -130,7 +139,10 @@ public class NationNodeBean implements NationNode {
             sendRegistryClosureRequests();
             restartDailyThread();
         } catch (Exception e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
         }
     }
 
