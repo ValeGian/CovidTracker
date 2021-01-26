@@ -30,6 +30,9 @@ public class AreaConsumer  {
         this.myRegions = myRegions;
         checkReceivedDailyReport = new boolean[myRegions.size()];
         receivedDailyReport = new DailyReport[myRegions.size()];
+        for(int i = 0; i < receivedDailyReport.length; i++) {
+            receivedDailyReport[i] = new DailyReport();
+        }
         myLog = myKVManager;
     }
 
@@ -39,11 +42,10 @@ public class AreaConsumer  {
         String body = cMsg.getMessageBody();
         int index = myRegions.indexOf(senderQueue);
         if(waitingReport && index != -1 && !checkReceivedDailyReport[index]){
-            receivedDailyReport[index] = new Gson().fromJson(body, DailyReport.class);
+            receivedDailyReport[index].addAll(new Gson().fromJson(body, DailyReport.class));
             checkReceivedDailyReport[index] = true;
         }
     }
-
 
     public DailyReport getDailyReport() {
         DailyReport responseReport = new DailyReport();
@@ -56,7 +58,6 @@ public class AreaConsumer  {
         }
         return responseReport;
     }
-
 
     public Pair<String, CommunicationMessage> handleAggregationRequest(CommunicationMessage cMsg) {
         Gson converter = new Gson();
@@ -100,7 +101,6 @@ public class AreaConsumer  {
         }
 
     }
-
 
     public List<Pair<String, CommunicationMessage>> handleRegistryClosureRequest(CommunicationMessage cMsg) {
         if(!waitingReport) {
