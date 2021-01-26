@@ -282,7 +282,7 @@ public class NationNodeBean implements NationNode {
             // wrap the old message in a new message with the nation as sender
             CommunicationMessage newCMsg = new CommunicationMessage();
             newCMsg.setMessageType(oldMsg.getMessageType());
-            newCMsg.setSenderName(myDestinationName);
+            newCMsg.setSenderName(myName);
             newCMsg.setMessageBody(gson.toJson(oldMsg));
             outMsg.setObject(newCMsg);
             // flood the message to all the areas

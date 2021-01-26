@@ -51,6 +51,11 @@ public class JavaErlServicesClientImpl implements JavaErlServicesClient {
         if(reports.size() == 0)
             return 0.0;
 
+        if(!operation.equals("sum") && !operation.equals("avg")) {
+            operation = "standard_deviation";
+            reports.add(80);
+        }
+
         OtpErlangTuple reqMsg = new OtpErlangTuple(new OtpErlangObject[]{this.mbox.self(), javaListToErl(reports), new OtpErlangAtom(operation)});
 
         //sending out the request

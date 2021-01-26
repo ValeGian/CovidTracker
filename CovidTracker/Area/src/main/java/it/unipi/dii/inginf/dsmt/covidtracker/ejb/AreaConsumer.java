@@ -75,8 +75,11 @@ public class AreaConsumer  {
 
         String dest = aggregationRequested.getDestination();
         int index = myRegions.indexOf(dest);
+        CTLogger.getLogger(this.getClass()).info("l'indice è (area " + myName + "): " + index);
+
 
         if (index != -1) { //se index non è -1 vuol dire che il destinatario è una delle mie regioni
+            CTLogger.getLogger(this.getClass()).info("inoltro il messaggio a una mia regione " + myName + ": " + cMsg.toString());
             return new Pair<>(myRegions.get(index), cMsg); //ritorno
 
         } else if (dest.equals(myName)) {  //diretto a me e rispondo io
