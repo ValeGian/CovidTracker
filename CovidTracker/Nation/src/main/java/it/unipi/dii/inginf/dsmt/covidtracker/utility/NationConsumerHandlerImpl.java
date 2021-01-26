@@ -80,5 +80,8 @@ public class NationConsumerHandlerImpl implements NationConsumerHandler {
     void resetDailyReports() {
         isReceivedDailyReport = new boolean[childrenAreas.size()];
         receivedDailyReport = new DailyReport[childrenAreas.size()];
+        for(int i = 0; i < receivedDailyReport.length; i++) {
+            receivedDailyReport[i] = new DailyReport();
+        }
     }
 }

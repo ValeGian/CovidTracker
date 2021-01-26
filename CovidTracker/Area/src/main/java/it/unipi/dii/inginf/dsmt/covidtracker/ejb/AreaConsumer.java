@@ -56,6 +56,7 @@ public class AreaConsumer  {
                 responseReport.addAll(receivedDailyReport[i]);
             }
         }
+        resetDailyReports();
         return responseReport;
     }
 
@@ -117,6 +118,11 @@ public class AreaConsumer  {
         return null;
     }
 
-
-
+    void resetDailyReports() {
+        checkReceivedDailyReport = new boolean[myRegions.size()];
+        receivedDailyReport = new DailyReport[myRegions.size()];
+        for(int i = 0; i < receivedDailyReport.length; i++) {
+            receivedDailyReport[i] = new DailyReport();
+        }
+    }
 }
