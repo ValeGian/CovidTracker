@@ -41,7 +41,7 @@ public class GenericAreaNode {
     @Resource(mappedName = "concurrent/__defaultManagedExecutorService")
     protected ManagedExecutorService executor;
 
-    private final static int DAILY_REPORT_TIMEOUT = 60;
+    private final static int DAILY_REPORT_TIMEOUT = 30;
 
     protected KVManager myKVManager;
 

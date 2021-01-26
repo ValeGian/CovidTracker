@@ -44,7 +44,7 @@ public class NationNodeBean implements NationNode {
 
     private ScheduledFuture<?> dailyReporterHandle = null;
     private ScheduledFuture<?> timeoutHandle = null;
-    private final static int DAILY_REPORT_TIMEOUT = 100;
+    private final static int DAILY_REPORT_TIMEOUT = 60;
     private final static int DAILY_REPORT_PERIOD = 60*60*24;
 
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
