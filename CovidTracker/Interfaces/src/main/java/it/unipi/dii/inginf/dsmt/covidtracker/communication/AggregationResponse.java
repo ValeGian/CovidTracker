@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 public class AggregationResponse implements Serializable {
     private String type;
+    private String responder;
     private String operation;
     private String startDay; //format "dd/MM/yyyy"
     private String lastDay;  //format "dd/MM/yyyy"
@@ -58,6 +59,14 @@ public class AggregationResponse implements Serializable {
     }
 
     public String toString() {
-        return "[" + startDay + "-" + lastDay + "] " + operation + " - " + type + " = " + result;
+        return "[" + startDay + "-" + lastDay + "] - sender [" + responder + "] - " + operation + " - " + type + " = " + result;
+    }
+
+    public String getResponder() {
+        return responder;
+    }
+
+    public void setResponder(String responder) {
+        this.responder = responder;
     }
 }

@@ -56,7 +56,7 @@ public class NationNodeBean implements NationNode {
     @EJB private Producer myProducer;
     @EJB private HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
-    private JavaErlServicesClient myErlangClient = new JavaErlServicesClientImpl();
+    protected JavaErlServicesClient myErlangClient = new JavaErlServicesClientImpl("nation");
     private NationConsumerHandler myMessageHandler = new NationConsumerHandlerImpl();
     private final KVManager myKVManager = new KVManagerImpl(myName);
     private final Gson gson = new Gson();
@@ -277,6 +277,7 @@ public class NationNodeBean implements NationNode {
     }
 
     private void floodMessageToAreas(ObjectMessage outMsg) {
+        CTLogger.getLogger(this.getClass()).info("Entro in flood");
         try {
             CommunicationMessage oldMsg = (CommunicationMessage) ((ObjectMessage) outMsg).getObject();
             // wrap the old message in a new message with the nation as sender
@@ -284,12 +285,14 @@ public class NationNodeBean implements NationNode {
             newCMsg.setMessageType(oldMsg.getMessageType());
             newCMsg.setSenderName(myName);
             newCMsg.setMessageBody(gson.toJson(oldMsg));
-            outMsg.setObject(newCMsg);
             // flood the message to all the areas
             for (String childDestinationName : myChildrenDestinationNames)
-                myProducer.enqueue(childDestinationName, outMsg);
+                myProducer.enqueue(childDestinationName, newCMsg, outMsg.getJMSReplyTo());
         } catch (JMSException e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).warn("Eccezione: " + sw.toString());
         }
     }
 

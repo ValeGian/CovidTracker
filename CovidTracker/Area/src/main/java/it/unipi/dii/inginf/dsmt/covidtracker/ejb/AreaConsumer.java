@@ -64,23 +64,28 @@ public class AreaConsumer  {
         AggregationRequest aggregationRequested;
         boolean encapsulatedBool = false;
 
+        CommunicationMessage encapsulated = null;
         if (senderName.equals(myParent)) {
-            CommunicationMessage encapsulated = converter.fromJson(cMsg.getMessageBody(), CommunicationMessage.class);
+            encapsulated = converter.fromJson(cMsg.getMessageBody(), CommunicationMessage.class);
 
             aggregationRequested = converter.fromJson(encapsulated.getMessageBody(), AggregationRequest.class);
             encapsulatedBool = true;
+            CTLogger.getLogger(this.getClass()).info("aggr requested encapsulated: " + aggregationRequested.toString());
 
         } else
             aggregationRequested = converter.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
 
         String dest = aggregationRequested.getDestination();
         int index = myRegions.indexOf(dest);
-        CTLogger.getLogger(this.getClass()).info("l'indice è (area " + myName + "): " + index);
+        CTLogger.getLogger(this.getClass()).info("l'indice è (area " + myName + "): " + index + " dest: " + dest);
 
 
         if (index != -1) { //se index non è -1 vuol dire che il destinatario è una delle mie regioni
-            CTLogger.getLogger(this.getClass()).info("inoltro il messaggio a una mia regione " + myName + ": " + cMsg.toString());
-            return new Pair<>(myRegions.get(index), cMsg); //ritorno
+            if (!encapsulatedBool) {
+                CTLogger.getLogger(this.getClass()).info("inoltro il messaggio a una mia regione " + myName + ": " + cMsg.toString());
+                return new Pair<>(myRegions.get(index), cMsg); //ritorno
+            } else
+                return new Pair<>(myRegions.get(index), encapsulated);
 
         } else if (dest.equals(myName)) {  //diretto a me e rispondo io
             return new Pair<>("mySelf", cMsg);
@@ -89,6 +94,7 @@ public class AreaConsumer  {
             if (encapsulatedBool) { //flooding mismatch
                 return null;
             } else {
+                CTLogger.getLogger(this.getClass()).info("Sto inoltrando a nazione correttamente");
                 return new Pair<>(myParent, cMsg); //inoltro a nazione
             }
         }

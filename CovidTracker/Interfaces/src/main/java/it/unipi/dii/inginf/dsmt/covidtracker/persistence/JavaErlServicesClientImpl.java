@@ -20,14 +20,15 @@ public class JavaErlServicesClientImpl implements JavaErlServicesClient {
     private static final String serverRegisteredName = "aggregation_server";
 
 
-    private static final String clientNodeName = "services_client_node@localhost";
+    private String clientNodeName;
     private static final String cookie = "";
     private OtpNode clientNode;
     private OtpMbox mbox;
 
 
-    public JavaErlServicesClientImpl() {
+    public JavaErlServicesClientImpl(String myName) {
         try {
+            clientNodeName = myName + "_client_node@localhost";
             if (cookie!="") {
                 clientNode = new OtpNode(clientNodeName, cookie);
             }
@@ -35,7 +36,7 @@ public class JavaErlServicesClientImpl implements JavaErlServicesClient {
                 clientNode = new OtpNode(clientNodeName);
             }
             mbox = clientNode.createMbox("default_mbox");
-        } catch (IOException e) {
+        } catch (Exception e) {
             clientNode = null;
             mbox = null;
             StringWriter sw = new StringWriter();
@@ -51,11 +52,6 @@ public class JavaErlServicesClientImpl implements JavaErlServicesClient {
         if(reports.size() == 0)
             return 0.0;
 
-        if(!operation.equals("sum") && !operation.equals("avg")) {
-            operation = "standard_deviation";
-            reports.add(80);
-        }
-
         OtpErlangTuple reqMsg = new OtpErlangTuple(new OtpErlangObject[]{this.mbox.self(), javaListToErl(reports), new OtpErlangAtom(operation)});
 
         //sending out the request
@@ -65,10 +61,11 @@ public class JavaErlServicesClientImpl implements JavaErlServicesClient {
         OtpErlangObject msg = null;
         try {
             msg = mbox.receive();
-        } catch (OtpErlangExit otpErlangExit) {
-            otpErlangExit.printStackTrace();
-        } catch (OtpErlangDecodeException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            CTLogger.getLogger(this.getClass()).info("Eccezione: " + sw.toString());
         }
 
         if(operation.equals("sum")) {

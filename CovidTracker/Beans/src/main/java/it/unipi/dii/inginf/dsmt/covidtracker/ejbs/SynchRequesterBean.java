@@ -56,8 +56,10 @@ public class SynchRequesterBean implements SynchRequester {
         }
       
         CommunicationMessage cMsg = (CommunicationMessage) ((ObjectMessage) inMsg).getObject();
+        AggregationResponse response = gson.fromJson(cMsg.getMessageBody(), AggregationResponse.class);
+        response.setResponder(cMsg.getSenderName());
         CTLogger.getLogger(this.getClass()).info("requestAndReceiveAggregation NOT NULL: " + cMsg.toString());
-        return gson.fromJson(cMsg.getMessageBody(), AggregationResponse.class);
+        return response;
     }
 
     //------------------------------------------------------------------------------------------------------------------

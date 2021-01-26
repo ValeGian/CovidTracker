@@ -5,6 +5,7 @@ import it.unipi.dii.inginf.dsmt.covidtracker.communication.AggregationRequest;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.CommunicationMessage;
 import it.unipi.dii.inginf.dsmt.covidtracker.communication.DailyReport;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.NationConsumerHandler;
+import it.unipi.dii.inginf.dsmt.covidtracker.log.CTLogger;
 import javafx.util.Pair;
 
 import java.util.List;
@@ -57,6 +58,8 @@ public class NationConsumerHandlerImpl implements NationConsumerHandler {
 
         String dest = aggregationRequested.getDestination();
         int index = childrenAreas.indexOf(dest);
+
+        CTLogger.getLogger(this.getClass()).info("Ho trovato l'indice " + index + " dest: " +dest);
 
         if(index != -1) {
             return new Pair<>(childrenAreas.get(index), cMsg);

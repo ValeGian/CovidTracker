@@ -48,7 +48,7 @@ public class GenericAreaNode {
     private final static String QC_FACTORY_NAME = "jms/__defaultConnectionFactory";
 
     @EJB private Producer myProducer;
-    private JavaErlServicesClient myErlangClient = new JavaErlServicesClientImpl();
+    protected JavaErlServicesClient myErlangClient;
     @EJB protected HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
 
     protected AreaConsumer myConsumer;
@@ -165,7 +165,7 @@ public class GenericAreaNode {
 
             CommunicationMessage outMsg = new CommunicationMessage();
             outMsg.setMessageType(MessageType.AGGREGATION_RESPONSE);
-            outMsg.setSenderName(myDestinationName);
+            outMsg.setSenderName(myName);
             AggregationResponse response = new AggregationResponse(request);
 
             if (request.getStartDay().equals(request.getLastDay())) {

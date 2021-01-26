@@ -33,7 +33,7 @@ public class GenericRegionNode{
     @EJB private Producer myProducer;
     @EJB protected RegionConsumerHandler myMessageHandler;
     @EJB protected HierarchyConnectionsRetriever myHierarchyConnectionsRetriever;
-    private JavaErlServicesClient myErlangClient = new JavaErlServicesClientImpl();
+    protected JavaErlServicesClient myErlangClient;
 
     protected KVManager myKVManager;
 
@@ -102,8 +102,10 @@ public class GenericRegionNode{
                         messageToSend = myMessageHandler.handleAggregationRequest(cMsg);
                         if (messageToSend.getValue().getMessageType() == MessageType.AGGREGATION_REQUEST) {
                             myProducer.enqueue(messageToSend.getKey(), messageToSend.getValue(), msg.getJMSReplyTo());
-                        } else
+                        } else {
+                            CTLogger.getLogger(this.getClass()).info("Sto per gestire la aggregation");
                             handleAggregation((ObjectMessage) msg);
+                        }
                         break;
                     case NEW_DATA:
                         saveDataLog(gson.fromJson(cMsg.getMessageBody(), DataLog.class));
@@ -174,10 +176,12 @@ public class GenericRegionNode{
                 result = myKVManager.getAggregation(request);
                 if (result == -1.0) {
                     try {
+                        CTLogger.getLogger(this.getClass()).info("Sto per richiedere l'aggregazione ad Erlang");
                         result = myErlangClient.computeAggregation(
                                 request.getOperation(),
                                 myKVManager.getDailyReportsInAPeriod(request.getStartDay(), request.getLastDay(), request.getType())
                         );
+                        CTLogger.getLogger(this.getClass()).info("Salvo l'aggregazione");
                         myKVManager.saveAggregation(request, result);
                     } catch (Exception e) {
                         StringWriter sw = new StringWriter();
@@ -193,6 +197,7 @@ public class GenericRegionNode{
             outMsg.setMessageBody(gson.toJson(response));
 
             // send the reply directly to te requester
+            CTLogger.getLogger(this.getClass()).info("Invio il messaggio");
             myProducer.enqueue(msg.getJMSReplyTo(), outMsg);
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
