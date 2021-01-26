@@ -98,6 +98,7 @@ public class RegionServlet extends HttpServlet {
                 out.println("<option value=\"sum\">Sum</option>");
                 out.println("<option value=\"avg\">Average</option>");
                 out.println("<option value=\"standard_deviation\">Standard Deviation</option>");
+                out.println("<option value=\"variance\">Variance</option>");
                 out.println("</select> <br><br>");
 
                 out.println("<label for=\"start_date\">Beginning of the period:</label>");

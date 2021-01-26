@@ -11,6 +11,7 @@ aggregation_server_loop() ->
 			sum -> Result = sum(List);
 			avg -> Result = avg(List);
 			standard_deviation -> Result = standard_deviation(List);
+			variance -> Result = variance(List);
 			_Else -> Result = -1
 		end,
 		io:format("SERVER: ~s: ~p~n", [Oper, Result]),
@@ -35,6 +36,7 @@ aggregation_server_loop(Oper) ->
 			sum -> Result = sum(List);
 			avg -> Result = avg(List);
 			standard_deviation -> Result = standard_deviation(List);
+			variance -> Result = variance(List);
 			_Else -> Result = -1
 		end,
 		io:format("SERVER: ~s: ~p~n", [Oper, Result]),
@@ -63,6 +65,7 @@ standard_deviation(L) -> standard_deviation(L, 0, 0, avg(L)).
 standard_deviation([H | T], QuadraticDeviation, Num, Avg) -> standard_deviation(T, QuadraticDeviation + (H - Avg) * (H - Avg), Num + 1, Avg);
 standard_deviation([], QuadraticDeviation, Num, _) -> math:sqrt(QuadraticDeviation / Num).
 
+variance(L) -> standard_deviation(L) * standard_deviation(L).
 %funzioni per testare i server
 gimme_result(Server, List, Oper) ->
   Server ! {self(), List, Oper},

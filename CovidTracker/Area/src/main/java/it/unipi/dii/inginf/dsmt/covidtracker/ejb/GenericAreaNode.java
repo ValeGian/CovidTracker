@@ -170,6 +170,8 @@ public class GenericAreaNode {
 
             if (request.getStartDay().equals(request.getLastDay())) {
                 result = myKVManager.getDailyReport(request.getLastDay(), request.getType());
+                if(result == -1.0 || request.getOperation().equals("standard_deviation") || request.getOperation().equals("variance"))
+                    result = 0.0;
 
             } else {
                 result = myKVManager.getAggregation(request);
