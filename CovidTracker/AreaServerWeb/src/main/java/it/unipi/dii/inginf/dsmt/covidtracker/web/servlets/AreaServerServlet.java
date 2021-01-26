@@ -1,5 +1,6 @@
 package it.unipi.dii.inginf.dsmt.covidtracker.web.servlets;
 
+import it.unipi.dii.inginf.dsmt.covidtracker.intfs.AreaNodeManager;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.areaInterfaces.AreaCenter;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.areaInterfaces.AreaNode;
 import it.unipi.dii.inginf.dsmt.covidtracker.intfs.areaInterfaces.AreaNorth;
@@ -19,16 +20,13 @@ import java.io.PrintWriter;
 public class AreaServerServlet extends HttpServlet {
 
     private static final String areaPage = "/server_area/serverAreaUI.jsp";
-
-    @EJB AreaNorth areaNorth;
-    @EJB AreaCenter areaCenter;
-    @EJB AreaSouth areaSouth;
+    @EJB private AreaNodeManager myManager;
 
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(true);
         String server = (String) session.getAttribute("areaServer");
 
-        AreaNode myNode = getArea(server);
+        AreaNode myNode = myManager.getArea(server);
 
         if(server != null) {
             resp.setContentType("text/html");
@@ -57,19 +55,5 @@ public class AreaServerServlet extends HttpServlet {
             }
         }
     }
-
-    public AreaNode getArea(String ejb) {
-        switch(ejb)
-        {
-            case "north":
-                return areaNorth;
-            case "center":
-                return areaCenter;
-            case "south":
-                return areaSouth;
-        }
-        return null;
-    }
-
 }
 

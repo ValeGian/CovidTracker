@@ -27,17 +27,23 @@ public class NationConsumerHandlerImpl implements NationConsumerHandler {
         this.childrenAreas = childrenAreas;
         isReceivedDailyReport = new boolean[childrenAreas.size()];
         receivedDailyReport = new DailyReport[childrenAreas.size()];
+        for(int i = 0; i < receivedDailyReport.length; i++) {
+            receivedDailyReport[i] = new DailyReport();
+        }
     }
 
     @Override
     public void handleDailyReport(CommunicationMessage cMsg) {
-        String areaQueue = cMsg.getSenderName();
+        String area = cMsg.getSenderName();
         String body = cMsg.getMessageBody();
 
-        int index = childrenAreas.indexOf(areaQueue);
+        int index = childrenAreas.indexOf(area);
+        CTLogger.getLogger(this.getClass()).info("Ho trovato l'indice " + index + " area: " + area);
         if(index != -1){
+            CTLogger.getLogger(this.getClass()).info("dailyReportArrayElement PRE: " + receivedDailyReport[index]);
             isReceivedDailyReport[index] = true;
             receivedDailyReport[index].addAll(new Gson().fromJson(body, DailyReport.class));
+            CTLogger.getLogger(this.getClass()).info("dailyReportArrayElement AFTER: " + receivedDailyReport[index]);
         }
     }
 
@@ -58,8 +64,6 @@ public class NationConsumerHandlerImpl implements NationConsumerHandler {
 
         String dest = aggregationRequested.getDestination();
         int index = childrenAreas.indexOf(dest);
-
-        CTLogger.getLogger(this.getClass()).info("Ho trovato l'indice " + index + " dest: " +dest);
 
         if(index != -1) {
             return new Pair<>(childrenAreas.get(index), cMsg);
