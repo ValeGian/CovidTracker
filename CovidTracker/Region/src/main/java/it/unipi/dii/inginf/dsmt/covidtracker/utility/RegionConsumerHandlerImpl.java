@@ -31,15 +31,12 @@ public class RegionConsumerHandlerImpl implements RegionConsumerHandler {
         Gson gson = new Gson();
         AggregationRequest aggregationRequest = gson.fromJson(cMsg.getMessageBody(), AggregationRequest.class);
 
-        CTLogger.getLogger(this.getClass()).info("sto per selezionare il ramo if o else cmsg: " + aggregationRequest.toString());
         if (aggregationRequest.getDestination().equals(myName)) { //se l'aggregazione é rivolta a me preparo un messaggio di risposta che verrà riempito dal nodo regione con il risultato dell'aggregazione
             CommunicationMessage responseMessage = new CommunicationMessage();
             responseMessage.setMessageType(MessageType.AGGREGATION_RESPONSE);
-            CTLogger.getLogger(this.getClass()).info("rispondo io (regione) nome: " + responseMessage.toString());
             return new Pair<>(cMsg.getSenderName(), responseMessage);
         }
         else { //altrimenti preparo un messaggio da inoltrare alla mia regione
-            CTLogger.getLogger(this.getClass()).info("invio ad area cmsg: " + cMsg.toString());
             return new Pair<>(myAreaDestinationName, cMsg);
         }
     }
